@@ -1,0 +1,88 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+    }
+
+    // Users: read own profile, admins read all. No client writes to role.
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']);
+    }
+
+    // Equbs: authenticated read, admin-only write via server
+    match /equbs/{equbId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // Memberships: users read own, admins read all. Writes via server only.
+    match /memberships/{membershipId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    // Financial collections: read-only for authorized users, no client writes
+    match /cycles/{cycleId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /obligations/{obligationId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /payouts/{payoutId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /draws/{drawId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /ledger/{entryId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow create, delete: if false;
+    }
+  }
+}
