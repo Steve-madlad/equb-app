@@ -49,3 +49,19 @@ export async function getLedgerForUser(userId: string, equbId: string): Promise<
 
   return snapshot.docs.map((doc) => doc.data() as LedgerEntry);
 }
+
+export async function getCurrentPoolForEqub(equbId: string): Promise<MoneyMinor> {
+  const entries = await getLedgerForEqub(equbId);
+
+  return entries.reduce<MoneyMinor>((balance, entry) => {
+    switch (entry.type) {
+      case "CONTRIBUTION_RECEIVED":
+      case "PENALTY_APPLIED":
+        return balance + entry.amountMinor;
+      case "PAYOUT_COMPLETED":
+        return balance - entry.amountMinor;
+      default:
+        return balance;
+    }
+  }, 0 as MoneyMinor);
+}

@@ -36,6 +36,9 @@ Most business logic lives in `src/lib`, while route handlers in `src/app/api` ex
 - Only admins can create Equbs through `POST /api/equbs`.
 - Equb lifecycle rules are enforced in `src/lib/domain/equbLifecycle.ts`.
 - Equb config validation and cycle generation live in `src/lib/domain/cycleUtils.ts`.
+- Admin-facing Equb search lives at `/equbs`, while user-facing search lives at `/search`.
+- The user dashboard groups joined/owned Equbs separately from discoverable Equbs.
+- Admin audit logs are surfaced at `/admin/audit` from the existing Firestore `auditLogs` collection.
 
 ### Memberships
 
@@ -50,6 +53,7 @@ Most business logic lives in `src/lib`, while route handlers in `src/app/api` ex
 - Payout selection is server-side and random, implemented in `src/lib/services/payoutService.ts`.
 - Draws use a selection strategy from `src/lib/payout/RandomSelectionStrategy.ts`.
 - Every major action creates audit logs, and many actions create notifications and ledger entries.
+- The Equb detail page's `Current pool` value is derived from ledger entries, not a frontend calculation.
 
 ## Data Model
 
@@ -59,6 +63,7 @@ Key domain types live in `src/lib/domain/types.ts`.
 - `Equb` tracks lifecycle state, creator, and timestamps.
 - `Membership`, `Cycle`, `ContributionObligation`, `PaymentRecord`, `Payout`, `PayoutDraw`, `LedgerEntry`, `AuditLogEntry`, and `Notification` are all modeled explicitly.
 - Money is stored in minor units, not floats.
+- Audit log entries are stored in Firestore and surfaced on the admin audit page.
 
 ## File Map
 
@@ -109,4 +114,3 @@ Key domain types live in `src/lib/domain/types.ts`.
 - `src/lib/firebase/client.ts` shows the public Firebase config.
 - `src/lib/firebase/admin.ts` shows the server-side Firebase initialization.
 - `src/lib/firebase/auth.ts` centralizes token verification and permission checks.
-

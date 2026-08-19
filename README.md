@@ -9,9 +9,10 @@ equb-app/
 ├── src/
 │   ├── app/                    # Next.js App Router pages & API routes
 │   │   ├── api/                # Server-side API (auth, equbs, payments, webhooks)
-│   │   ├── admin/              # Admin dashboard & Equb management
-│   │   ├── dashboard/          # User dashboard
-│   │   ├── equbs/              # Equb browse & detail pages
+│   │   ├── admin/              # Admin dashboard, audit, and Equb management
+│   │   ├── dashboard/          # User dashboard with member/discovery sections
+│   │   ├── search/             # User-facing Equb search with filters
+│   │   ├── equbs/              # Admin Equb search & Equb detail pages
 │   │   ├── payments/mock/      # Mock payment provider UI
 │   │   ├── login/ & register/  # Authentication pages
 │   │   └── how-it-works/       # Public explainer
@@ -90,6 +91,8 @@ cp .env.example .env.local
 
 **Money representation:** All amounts stored as integer minor units (1 ETB = 100 minor units). Never use floating-point for financial calculations.
 
+**Current pool:** The Equb detail page shows the live pool balance derived from ledger entries, so it reflects posted contributions and completed payouts.
+**Dashboard layout:** The user dashboard separates Equbs you are part of from the discoverable list, so your memberships are easier to scan at a glance.
 ## Authentication Setup
 
 1. Enable Email/Password in Firebase Authentication console
@@ -238,6 +241,9 @@ Tests cover: money utilities, lifecycle transitions, eligibility rules, random s
 - **Penalties configured but not auto-applied** — architecture ready, default is no penalties
 - **Single currency** — ETB only (extensible)
 - **Admin role assignment** — manual via Firestore console
+- **Admin audit viewer** — available in the app at `/admin/audit`
+- **User dashboard split** — active membership Equbs are grouped separately from discoverable Equbs
+- **User/admin search pages** — `/search` is user-facing, `/equbs` is admin-facing
 - **No automated cycle advancement scheduler** — admin triggers draws manually
 - **No paid Firebase Cloud Functions** — overdue marking is an admin API action instead of a scheduled job
 

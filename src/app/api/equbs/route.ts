@@ -1,6 +1,10 @@
 import { toMinorUnits } from "@/lib/domain/money";
 import { requireAdmin, requireAuth } from "@/lib/firebase/auth";
-import { createEqub, listEqubs } from "@/lib/services/equbService";
+import {
+  createEqub,
+  getMembershipsForEqub,
+  listEqubs,
+} from "@/lib/services/equbService";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -26,7 +30,24 @@ export async function GET(request: NextRequest) {
     const equbs = await listEqubs(
       status as import("@/lib/domain/types").EqubStatus | undefined,
     );
-    return NextResponse.json({ equbs });
+    const equbSummaries = await Promise.all(
+      equbs.map(async (equb) => {
+        const memberships = await getMembershipsForEqub(equb.id);
+        const activeMemberCount = memberships.filter((membership) =>
+          ["ACTIVE", "APPROVED"].includes(membership.status),
+        ).length;
+        const pendingMemberCount = memberships.filter(
+          (membership) => membership.status === "PENDING",
+        ).length;
+
+        return {
+          ...equb,
+          activeMemberCount,
+          pendingMemberCount,
+        };
+      }),
+    );
+    return NextResponse.json({ equbs: equbSummaries });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unauthorized" },

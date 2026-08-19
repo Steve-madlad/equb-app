@@ -15,8 +15,6 @@ let app: FirebaseApp | undefined;
 let auth: Auth | undefined;
 let db: Firestore | undefined;
 
-console.log({firebaseConfig});
-
 export function getFirebaseApp(): FirebaseApp {
   if (!app) {
     app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);

@@ -6,6 +6,7 @@ import { formatMoney, toMinorUnits } from "@/lib/domain/money";
 import { getUserProfile, requireAdmin, requireAuth } from "@/lib/firebase/auth";
 import {
   approveMembership,
+  approveMemberships,
   deleteEqub,
   getCyclesForEqub,
   getEqub,
@@ -22,6 +23,7 @@ import {
   getDrawForCycle,
   getPayoutsForEqub,
 } from "@/lib/services/payoutService";
+import { getCurrentPoolForEqub } from "@/lib/services/ledgerService";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -135,6 +137,8 @@ export async function GET(
       cycles.filter((c) => c.drawId).map((c) => getDrawForCycle(c.id)),
     );
 
+    const currentPoolMinor = await getCurrentPoolForEqub(id);
+
     return NextResponse.json({
       equb,
       memberships,
@@ -146,11 +150,8 @@ export async function GET(
       eligibility,
       pendingRequests,
       memberSummaries,
-      poolDisplay: formatMoney(
-        equb.contributionAmountMinor *
-          memberships.filter((m) => ["ACTIVE", "APPROVED"].includes(m.status))
-            .length,
-      ),
+      currentPoolMinor,
+      currentPoolDisplay: formatMoney(currentPoolMinor),
     });
   } catch (error) {
     return NextResponse.json(
@@ -168,7 +169,7 @@ export async function PATCH(
     const admin = await requireAdmin(request.headers.get("authorization"));
     const { id } = await params;
     const body = await request.json();
-    const { action, membershipId } = body;
+    const { action, membershipId, membershipIds } = body;
 
     switch (action) {
       case "open":
@@ -208,6 +209,16 @@ export async function PATCH(
           );
         const membership = await approveMembership(membershipId, admin.id);
         return NextResponse.json({ membership });
+      case "approve_members": {
+        if (!Array.isArray(membershipIds) || membershipIds.length === 0) {
+          return NextResponse.json(
+            { error: "membershipIds required" },
+            { status: 400 },
+          );
+        }
+        const result = await approveMemberships(membershipIds, admin.id);
+        return NextResponse.json({ result });
+      }
       default:
         return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }

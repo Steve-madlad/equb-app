@@ -64,7 +64,7 @@ export default function MockPaymentPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar links={[{ href: "/dashboard", label: "Dashboard" }]} />
+      <Navbar links={[]} />
       <main className="mx-auto max-w-lg px-4 py-12">
         <Card title="Mock Payment Provider">
           <div className="space-y-4">

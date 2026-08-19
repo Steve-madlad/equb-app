@@ -35,22 +35,15 @@ export default function AdminDashboardPage() {
     return unsub;
   }, []);
 
-  const adminLinks = [
-    { href: "/admin", label: "Dashboard" },
-    { href: "/admin/equbs", label: "Equbs" },
-    { href: "/admin/audit", label: "Audit Logs" },
-    { href: "/admin/ledger", label: "Ledger" },
-  ];
-
   if (loading) return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar
-        links={adminLinks}
+        links={[]}
         userName={userName}
-        dashboardHref="/dashboard"
-        notificationsHref="/notifications"
+        isAdmin
+        searchHref="/equbs"
         onSignOut={() => signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))}
       />
       <main className="mx-auto max-w-7xl px-4 py-8">

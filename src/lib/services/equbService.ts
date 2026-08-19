@@ -396,6 +396,33 @@ export async function approveMembership(
   });
 }
 
+export interface BulkApproveMembershipResult {
+  approved: Membership[];
+  skipped: Array<{ membershipId: string; reason: string }>;
+}
+
+export async function approveMemberships(
+  membershipIds: string[],
+  adminId: string,
+): Promise<BulkApproveMembershipResult> {
+  const approved: Membership[] = [];
+  const skipped: Array<{ membershipId: string; reason: string }> = [];
+
+  for (const membershipId of membershipIds) {
+    try {
+      const membership = await approveMembership(membershipId, adminId);
+      approved.push(membership);
+    } catch (error) {
+      skipped.push({
+        membershipId,
+        reason: error instanceof Error ? error.message : "Approval failed",
+      });
+    }
+  }
+
+  return { approved, skipped };
+}
+
 export async function leaveMembership(
   membershipId: string,
   userId: string,

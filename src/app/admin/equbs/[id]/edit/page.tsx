@@ -150,6 +150,7 @@ export default function EditEqubPage() {
           { href: "/admin", label: "Admin" },
           { href: `/equbs/${equbId}`, label: "Back to Equb" },
         ]}
+        isAdmin
       />
       <main className="mx-auto max-w-2xl px-4 py-8">
         <h1 className="text-2xl font-bold">Edit Equb</h1>

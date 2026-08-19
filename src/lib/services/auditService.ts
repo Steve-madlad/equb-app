@@ -33,3 +33,14 @@ export async function getAuditLogsForEqub(equbId: string): Promise<AuditLogEntry
 
   return snapshot.docs.map((doc) => doc.data() as AuditLogEntry);
 }
+
+export async function getAllAuditLogs(limit = 200): Promise<AuditLogEntry[]> {
+  const db = getAdminDb();
+  const snapshot = await db
+    .collection(COLLECTIONS.auditLogs)
+    .orderBy("timestamp", "desc")
+    .limit(limit)
+    .get();
+
+  return snapshot.docs.map((doc) => doc.data() as AuditLogEntry);
+}

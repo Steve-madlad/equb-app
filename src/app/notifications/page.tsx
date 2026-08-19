@@ -89,13 +89,11 @@ export default function NotificationsPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar
         links={[
-          { href: "/dashboard", label: "Dashboard" },
-          { href: "/equbs", label: "Equbs" },
-          { href: "/notifications", label: "Notifications" },
+          ...(profile?.role === "ADMIN" ? [{ href: "/admin", label: "Admin" }] : []),
         ]}
         userName={profile?.displayName}
-        dashboardHref="/dashboard"
-        notificationsHref="/notifications"
+        isAdmin={profile?.role === "ADMIN"}
+        searchHref={profile?.role === "ADMIN" ? "/equbs" : "/search"}
         notificationCount={unreadCount}
         onSignOut={() => signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))}
       />
