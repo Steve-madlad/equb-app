@@ -5,6 +5,7 @@ import Link from "next/link";
 import { onIdTokenChanged, signOut } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { Navbar } from "@/components/layout/Navbar";
+import { EqubLoading } from "@/components/ui/EqubLoading";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -137,18 +138,14 @@ export default function AdminEqubsPage() {
     statusFilter,
   ]);
 
-  const navLinks = [
-    { href: "/admin", label: "Admin" },
-  ];
-
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
+    return <EqubLoading />;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar
-        links={navLinks}
+        links={[]}
         userName={profile?.displayName}
         isAdmin={profile?.role === "ADMIN"}
         searchHref="/equbs"

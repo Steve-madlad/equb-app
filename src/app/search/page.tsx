@@ -5,6 +5,7 @@ import Link from "next/link";
 import { onIdTokenChanged, signOut } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { Navbar } from "@/components/layout/Navbar";
+import { EqubLoading } from "@/components/ui/EqubLoading";
 import {
   Card,
   CardContent,
@@ -159,7 +160,7 @@ export default function SearchPage() {
   ]);
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
+    return <EqubLoading />;
   }
 
   return (

@@ -18,9 +18,11 @@ export async function createObligationsForCycle(
   equb: Equb,
   cycle: Cycle,
   memberships: Membership[],
+  options?: { dueDateOverride?: string },
 ): Promise<ContributionObligation[]> {
   const db = getAdminDb();
   const obligations: ContributionObligation[] = [];
+  const dueDate = options?.dueDateOverride ?? cycle.dueDate;
 
   for (const membership of memberships) {
     if (!["ACTIVE", "APPROVED"].includes(membership.status)) continue;
@@ -35,7 +37,7 @@ export async function createObligationsForCycle(
       penaltyMinor: 0,
       totalDueMinor: equb.contributionAmountMinor,
       status: "PENDING",
-      dueDate: cycle.dueDate,
+      dueDate,
     };
 
     await db
@@ -215,13 +217,19 @@ export async function verifyAndRecordPayment(
 }
 
 export async function markOverdueObligations(): Promise<number> {
+  return markOverdueObligationsForDate();
+}
+
+export async function markOverdueObligationsForDate(
+  currentDateIso: string = new Date().toISOString(),
+): Promise<number> {
   const db = getAdminDb();
-  const now = new Date().toISOString();
+  const today = currentDateIso.slice(0, 10);
 
   const snapshot = await db
     .collection(COLLECTIONS.obligations)
     .where("status", "==", "PENDING")
-    .where("dueDate", "<", now.split("T")[0])
+    .where("dueDate", "<", today)
     .get();
 
   let count = 0;
@@ -241,6 +249,37 @@ export async function markOverdueObligations(): Promise<number> {
       title: "Contribution Overdue",
       message: `Your contribution of ${formatMoney(obligation.totalDueMinor)} is overdue.`,
       equbId: obligation.equbId,
+    });
+    count++;
+  }
+
+  return count;
+}
+
+export async function notifyAdminsOfDuePayoutCycles(
+  currentDateIso: string = new Date().toISOString(),
+): Promise<number> {
+  const db = getAdminDb();
+  const today = currentDateIso.slice(0, 10);
+  const snapshot = await db.collection(COLLECTIONS.cycles).get();
+
+  let count = 0;
+  for (const doc of snapshot.docs) {
+    const cycle = doc.data() as Cycle;
+    if (cycle.dueDate > today) continue;
+    if (cycle.status === "COMPLETED" || cycle.status === "DRAWN") continue;
+
+    const equbDoc = await db.collection(COLLECTIONS.equbs).doc(cycle.equbId).get();
+    const equb = equbDoc.exists ? (equbDoc.data() as Equb) : null;
+    if (!equb) continue;
+
+    await createNotification({
+      id: `cycle-due-${cycle.id}`,
+      userId: equb.createdBy,
+      type: "CYCLE_DUE",
+      title: "Payout cycle is due",
+      message: `Cycle ${cycle.cycleNumber} for ${equb.name} reached its due date.`,
+      equbId: equb.id,
     });
     count++;
   }

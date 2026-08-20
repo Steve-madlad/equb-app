@@ -24,10 +24,13 @@ export interface DrawPayoutResult {
 export async function drawPayoutRecipient(
   equbId: string,
   cycleId: string,
-  adminId: string
+  adminId: string,
+  options?: { currentDateIso?: string },
 ): Promise<DrawPayoutResult> {
   const db = getAdminDb();
   const cycleRef = db.collection(COLLECTIONS.cycles).doc(cycleId);
+  const currentDateIso = options?.currentDateIso ?? new Date().toISOString();
+  const currentDate = currentDateIso.slice(0, 10);
 
   return db.runTransaction(async (transaction) => {
     const cycleDoc = await transaction.get(cycleRef);
@@ -38,6 +41,10 @@ export async function drawPayoutRecipient(
 
     if (cycle.payoutRecipientId || cycle.drawId) {
       throw new Error("Payout already drawn for this cycle");
+    }
+
+    if (cycle.dueDate > currentDate) {
+      throw new Error(`Cycle is not due until ${cycle.dueDate}`);
     }
 
     if (!["ACTIVE", "DRAW_PENDING", "WAITING_FOR_ELIGIBILITY"].includes(cycle.status)) {

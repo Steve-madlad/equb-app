@@ -60,10 +60,11 @@ describe("equb lifecycle", () => {
   });
 
   it("requires the minimum member threshold before starting the Equb", () => {
-    expect(canStartEqub(0, 1, 10)).toBe(false);
-    expect(canStartEqub(1, 1, 10)).toBe(true);
-    expect(canStartEqub(10, 1, 10)).toBe(true);
-    expect(canStartEqub(11, 1, 10)).toBe(false);
+    expect(canStartEqub(0, 2, 10)).toBe(false);
+    expect(canStartEqub(1, 2, 10)).toBe(false);
+    expect(canStartEqub(2, 2, 10)).toBe(true);
+    expect(canStartEqub(10, 2, 10)).toBe(true);
+    expect(canStartEqub(11, 2, 10)).toBe(false);
   });
 });
 
@@ -169,7 +170,7 @@ describe("cycle utilities", () => {
   it("generates monthly cycle dates", () => {
     const dates = generateCycleDates("2026-09-01", "MONTHLY", 3);
     expect(dates).toHaveLength(3);
-    expect(dates[0]).toBe("2026-09-01");
+    expect(dates[0]).toBe("2026-10-01");
   });
 
   it("validates equb config", () => {

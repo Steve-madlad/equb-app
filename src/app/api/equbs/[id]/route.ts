@@ -13,17 +13,21 @@ import {
   getMembershipsForEqub,
   lockEqub,
   openEqubForMembers,
+  rejectMembership,
+  withdrawMembership,
   updateEqub,
 } from "@/lib/services/equbService";
 import {
   getObligationsForCycle,
   getObligationsForUser,
 } from "@/lib/services/paymentService";
+import { notifyAdminsOfDuePayoutCycles } from "@/lib/services/paymentService";
 import {
   getDrawForCycle,
   getPayoutsForEqub,
 } from "@/lib/services/payoutService";
 import { getCurrentPoolForEqub } from "@/lib/services/ledgerService";
+import { resolveRequestDate } from "@/lib/testClock";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -35,7 +39,7 @@ const createEqubSchema = z.object({
   customIntervalDays: z.number().positive().optional(),
   numberOfCycles: z.number().int().min(2),
   memberLimit: z.number().int().min(2),
-  minimumMemberCount: z.number().int().min(1),
+  minimumMemberCount: z.number().int().min(2),
   startDate: z.string(),
   penaltyEnabled: z.boolean().default(false),
   penaltyType: z.enum(["FIXED_AMOUNT", "PERCENTAGE"]).nullable().optional(),
@@ -49,6 +53,9 @@ export async function GET(
   try {
     const user = await requireAuth(request.headers.get("authorization"));
     const { id } = await params;
+    if (user.role === "ADMIN") {
+      await notifyAdminsOfDuePayoutCycles(resolveRequestDate(request));
+    }
     const equb = await getEqub(id);
     if (!equb)
       return NextResponse.json({ error: "Equb not found" }, { status: 404 });
@@ -166,17 +173,33 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const admin = await requireAdmin(request.headers.get("authorization"));
     const { id } = await params;
     const body = await request.json();
     const { action, membershipId, membershipIds } = body;
+    const authHeader = request.headers.get("authorization");
+
+    if (action === "withdraw_membership") {
+      const user = await requireAuth(authHeader);
+      if (!membershipId) {
+        return NextResponse.json(
+          { error: "membershipId required" },
+          { status: 400 },
+        );
+      }
+      const membership = await withdrawMembership(membershipId, user.id);
+      return NextResponse.json({ membership });
+    }
+
+    const admin = await requireAdmin(authHeader);
 
     switch (action) {
       case "open":
         const opened = await openEqubForMembers(id, admin.id);
         return NextResponse.json({ equb: opened });
       case "lock":
-        const locked = await lockEqub(id, admin.id);
+        const locked = await lockEqub(id, admin.id, {
+          currentDateIso: resolveRequestDate(request),
+        });
         return NextResponse.json({ equb: locked });
       case "update": {
         const parsed = createEqubSchema.parse(body);
@@ -209,6 +232,15 @@ export async function PATCH(
           );
         const membership = await approveMembership(membershipId, admin.id);
         return NextResponse.json({ membership });
+      case "reject_member":
+        if (!membershipId) {
+          return NextResponse.json(
+            { error: "membershipId required" },
+            { status: 400 },
+          );
+        }
+        const rejected = await rejectMembership(membershipId, admin.id);
+        return NextResponse.json({ membership: rejected });
       case "approve_members": {
         if (!Array.isArray(membershipIds) || membershipIds.length === 0) {
           return NextResponse.json(

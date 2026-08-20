@@ -7,6 +7,7 @@ import { getFirebaseAuth } from "@/lib/firebase/client";
 import { onIdTokenChanged } from "firebase/auth";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { getBrowserTestDate, getTodayIsoDate } from "@/lib/testClock";
 
 export default function CreateEqubPage() {
   const [token, setToken] = useState("");
@@ -19,7 +20,7 @@ export default function CreateEqubPage() {
     frequency: "MONTHLY" as const,
     numberOfCycles: 10,
     memberLimit: 10,
-    startDate: new Date().toISOString().split("T")[0],
+    startDate: getTodayIsoDate(),
     penaltyEnabled: false,
     minimumMemberCount: 2,
   });
@@ -30,6 +31,13 @@ export default function CreateEqubPage() {
       else setToken(await user.getIdToken());
     });
     return unsub;
+  }, []);
+
+  useEffect(() => {
+    const testDate = getBrowserTestDate();
+    if (testDate) {
+      setForm((current) => ({ ...current, startDate: testDate }));
+    }
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -56,7 +64,7 @@ export default function CreateEqubPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar links={[{ href: "/admin", label: "Admin" }]} isAdmin />
+      <Navbar links={[]} isAdmin />
       <main className="mx-auto max-w-2xl px-4 py-8">
         <h1 className="text-2xl font-bold">Create Equb</h1>
         <Card className="mt-6">
@@ -100,7 +108,7 @@ export default function CreateEqubPage() {
                     })
                   }
                   required
-                  min={1}
+                  min={2}
                   className="mt-1 w-full rounded-lg border px-3 py-2"
                 />
               </div>
@@ -149,7 +157,7 @@ export default function CreateEqubPage() {
                     })
                   }
                   required
-                  min={1}
+                  min={2}
                   max={form.memberLimit || 1}
                   className="mt-1 w-full rounded-lg border px-3 py-2"
                 />
@@ -176,7 +184,7 @@ export default function CreateEqubPage() {
               <Button type="submit" loading={loading}>
                 Create Equb
               </Button>
-              <Link href="/admin">
+              <Link href="/dashboard">
                 <Button variant="secondary" type="button">
                   Cancel
                 </Button>

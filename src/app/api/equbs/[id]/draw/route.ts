@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/firebase/auth";
 import { drawPayoutRecipient } from "@/lib/services/payoutService";
 import { getDrawForCycle } from "@/lib/services/payoutService";
+import { resolveRequestDate } from "@/lib/testClock";
 
 export async function POST(
   request: NextRequest,
@@ -25,7 +26,9 @@ export async function POST(
       );
     }
 
-    const result = await drawPayoutRecipient(equbId, cycleId, admin.id);
+    const result = await drawPayoutRecipient(equbId, cycleId, admin.id, {
+      currentDateIso: resolveRequestDate(request),
+    });
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Draw failed";

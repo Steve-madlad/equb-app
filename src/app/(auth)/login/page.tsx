@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { onIdTokenChanged, signInWithEmailAndPassword } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -12,6 +12,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const unsub = onIdTokenChanged(getFirebaseAuth(), (user) => {
+      if (user) {
+        window.location.href = "/dashboard";
+      }
+    });
+    return unsub;
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

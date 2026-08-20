@@ -5,6 +5,8 @@ import {
   getMembershipsForEqub,
   listEqubs,
 } from "@/lib/services/equbService";
+import { notifyAdminsOfDuePayoutCycles } from "@/lib/services/paymentService";
+import { resolveRequestDate } from "@/lib/testClock";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -16,7 +18,7 @@ const createEqubSchema = z.object({
   customIntervalDays: z.number().positive().optional(),
   numberOfCycles: z.number().int().min(2),
   memberLimit: z.number().int().min(2),
-  minimumMemberCount: z.number().int().min(1),
+  minimumMemberCount: z.number().int().min(2),
   startDate: z.string(),
   penaltyEnabled: z.boolean().default(false),
   penaltyType: z.enum(["FIXED_AMOUNT", "PERCENTAGE"]).nullable().optional(),
@@ -25,7 +27,11 @@ const createEqubSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth(request.headers.get("authorization"));
+    const user = await requireAuth(request.headers.get("authorization"));
+    const requestDateIso = resolveRequestDate(request);
+    if (user.role === "ADMIN") {
+      await notifyAdminsOfDuePayoutCycles(requestDateIso);
+    }
     const status = request.nextUrl.searchParams.get("status") ?? undefined;
     const equbs = await listEqubs(
       status as import("@/lib/domain/types").EqubStatus | undefined,

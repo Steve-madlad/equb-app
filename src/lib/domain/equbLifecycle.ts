@@ -36,7 +36,7 @@ export function canStartEqub(
   if (!Number.isFinite(memberCount) || !Number.isFinite(minimumMemberCount)) {
     return false;
   }
-  if (minimumMemberCount < 1) return false;
+  if (minimumMemberCount < 2) return false;
   return memberCount >= minimumMemberCount && memberCount <= memberLimit;
 }
 

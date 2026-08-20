@@ -121,6 +121,15 @@ body {
   @apply bg-gray-50 text-gray-900 antialiased;
 }
 
+@keyframes equb-wave {
+  0% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-18deg);
+  }
+}
+
 @layer utilities {
   .flex-center {
     @apply flex items-center justify-center;

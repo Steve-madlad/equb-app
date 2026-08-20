@@ -21,8 +21,8 @@ export default function HomePage() {
             financial records - built for real Equb communities.
           </p>
           <div className="mt-10 flex justify-center gap-4">
-            <Link href="/register">
-              <Button size="lg">Create account</Button>
+            <Link href="/register" >
+              <Button size="lg" className="bg-emerald-600">Create account</Button>
             </Link>
             <Link href="/how-it-works">
               <Button size="lg" variant="secondary">

@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { onIdTokenChanged } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { Navbar } from "@/components/layout/Navbar";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { EqubLoading } from "@/components/ui/EqubLoading";
+import { MockPaymentSheet } from "@/components/payments/MockPaymentSheet";
 
 export default function MockPaymentPage({
   params,
@@ -62,46 +62,35 @@ export default function MockPaymentPage({
     setLoading(false);
   }
 
+  if (!transactionId) {
+    return <EqubLoading />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar links={[]} />
-      <main className="mx-auto max-w-lg px-4 py-12">
-        <Card title="Mock Payment Provider">
-          <div className="space-y-4">
-            <div className="rounded-lg bg-gray-100 p-4 font-mono text-sm">
-              {transactionId}
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Status</span>
-              <StatusBadge status={status} />
-            </div>
-            <p className="text-sm text-gray-500">
-              This simulates a real payment provider flow. Select an outcome below.
-            </p>
-            {status === "INITIATED" && (
-              <div className="flex gap-3">
-                <Button onClick={() => simulatePayment("SUCCESS")} loading={loading} className="flex-1">
-                  Pay Successfully
-                </Button>
-                <Button onClick={() => simulatePayment("FAILED")} loading={loading} variant="danger" className="flex-1">
-                  Fail Payment
-                </Button>
-              </div>
-            )}
-            {status === "SUCCESS" && (
-              <div className="rounded-lg bg-green-50 p-4 text-center">
-                <p className="font-semibold text-green-800">Payment verified!</p>
-                <Button
-                  variant="secondary"
-                  className="mt-4"
-                  onClick={() => (window.location.href = "/dashboard")}
-                >
-                  Return to Dashboard
-                </Button>
-              </div>
-            )}
-          </div>
-        </Card>
+      <main className="mx-auto max-w-7xl px-4 py-8">
+        <MockPaymentSheet
+          open
+          loading={loading}
+          status={status}
+          transactionId={transactionId}
+          amountMinor={1000}
+          dueDate={new Date().toISOString().slice(0, 10)}
+          equbName="Mock payment provider"
+          obligationLabel="Standalone test flow"
+          onOpenChange={(open) => {
+            if (!open) {
+              window.location.href = "/dashboard";
+            }
+          }}
+          onOutcome={async (outcome) => {
+            await simulatePayment(outcome);
+          }}
+        />
+        <div className="sr-only">
+          <Button variant="secondary">Return to Dashboard</Button>
+        </div>
       </main>
     </div>
   );

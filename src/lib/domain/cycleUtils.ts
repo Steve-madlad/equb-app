@@ -12,11 +12,11 @@ export function generateCycleDates(
   for (let i = 0; i < numberOfCycles; i++) {
     const date = new Date(start);
     if (frequency === "MONTHLY") {
-      date.setMonth(start.getMonth() + i);
+      date.setMonth(start.getMonth() + i + 1);
     } else if (frequency === "WEEKLY") {
-      date.setDate(start.getDate() + i * 7);
+      date.setDate(start.getDate() + (i + 1) * 7);
     } else if (frequency === "CUSTOM" && customIntervalDays) {
-      date.setDate(start.getDate() + i * customIntervalDays);
+      date.setDate(start.getDate() + (i + 1) * customIntervalDays);
     }
     dates.push(date.toISOString().split("T")[0]);
   }
@@ -41,8 +41,8 @@ export function validateEqubConfig(config: Partial<EqubConfig>): string[] {
     errors.push("Number of cycles must be at least 1");
   if (!config.memberLimit || config.memberLimit < 2)
     errors.push("Member limit must be at least 2");
-  if (!config.minimumMemberCount || config.minimumMemberCount < 1)
-    errors.push("Minimum member count must be at least 1");
+  if (!config.minimumMemberCount || config.minimumMemberCount < 2)
+    errors.push("Minimum member count must be at least 2");
   if (
     config.minimumMemberCount &&
     config.memberLimit &&

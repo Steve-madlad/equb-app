@@ -1,6 +1,17 @@
 "use client";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,11 +20,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  getBrowserTestDate,
+  getTodayIsoDate,
+  setBrowserTestDate,
+} from "@/lib/testClock";
 import { cn } from "@/lib/utils";
-import { Bell, FileClock, LayoutDashboard, LogOut, Search } from "lucide-react";
+import {
+  Bell,
+  CalendarRange,
+  FileClock,
+  LayoutDashboard,
+  LogOut,
+  Search,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ComponentType } from "react";
+import { ComponentType, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface NavLink {
   href: string;
@@ -40,6 +64,89 @@ function getInitials(name?: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
+}
+
+function TestDateDialog() {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(getTodayIsoDate());
+  const [activeDate, setActiveDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    const current = getBrowserTestDate();
+    setActiveDate(current);
+    setValue(current ?? getTodayIsoDate());
+  }, []);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          className="h-10 w-10"
+          aria-label="Set test date"
+          title={activeDate ? `Test date: ${activeDate}` : "Set test date"}
+        >
+          <CalendarRange className="size-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Test date</DialogTitle>
+          <DialogDescription>
+            Temporarily make the app behave as if today is the date you choose.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Date</label>
+          <Input
+            type="date"
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+          />
+          <p className="text-xs text-gray-500">
+            Current override: {activeDate ?? "Using the real date"}
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setBrowserTestDate(null);
+              setActiveDate(null);
+              setValue(getTodayIsoDate());
+              setOpen(false);
+              toast.success("Test date cleared");
+              window.location.reload();
+            }}
+          >
+            Clear
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              if (!value) {
+                toast.error("Pick a date first");
+                return;
+              }
+
+              setBrowserTestDate(value);
+              setActiveDate(value);
+              setOpen(false);
+              toast.success(`Test date set to ${value}`);
+              window.location.reload();
+            }}
+          >
+            Apply
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export function Navbar({
@@ -110,6 +217,10 @@ export function Navbar({
         </div>
 
         <div className="flex items-center gap-2">
+          {authenticated && process.env.NODE_ENV !== "production" ? (
+            <TestDateDialog />
+          ) : null}
+
           {authenticated && searchHref && (
             <Link
               href={searchHref}
@@ -140,18 +251,18 @@ export function Navbar({
           {authenticated && (
             <DropdownMenu>
               <DropdownMenuTrigger
-                aria-label="Profile menu"
+                aria-label="Profile menuu"
                 title={userName}
-                className="inline-flex h-10 items-center justify-center rounded-full border border-gray-200 bg-white px-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                className="px-0"
               >
-                <Avatar size="lg" className="h-8 w-8">
-                  <AvatarFallback className="rounded-full bg-emerald-600 text-white">
+                <Avatar size="lg">
+                  <AvatarFallback className="rounded-lg px-0! bg-emerald-600 text-white">
                     {getInitials(userName)}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel className="flex items-center gap-2 text-sm">
+              <DropdownMenuContent align="end" className="w-36">
+                <DropdownMenuLabel className="flex items-center justify-start gap-2 text-sm">
                   <Avatar size="lg" className="h-8 w-8">
                     <AvatarFallback className="rounded-full bg-emerald-600 text-white">
                       {getInitials(userName)}

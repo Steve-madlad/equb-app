@@ -63,6 +63,9 @@ export interface Membership {
   joinedAt: string;
   approvedAt?: string;
   approvedBy?: string;
+  rejectedAt?: string;
+  rejectedBy?: string;
+  rejectionReason?: string;
   removedAt?: string;
   removedBy?: string;
   removalReason?: string;
@@ -203,6 +206,7 @@ export type AuditAction =
   | "MEMBER_JOINED"
   | "MEMBER_APPROVED"
   | "MEMBER_REJECTED"
+  | "MEMBER_WITHDRAWN"
   | "EQUB_LOCKED"
   | "EQUB_ACTIVATED"
   | "CYCLE_CREATED"
@@ -243,7 +247,10 @@ export type NotificationType =
   | "MEMBERSHIP_REQUESTED"
   | "MEMBERSHIP_APPROVED"
   | "MEMBERSHIP_REJECTED"
+  | "MEMBERSHIP_WITHDRAWN"
+  | "EQUB_START_DATE_CHANGED"
   | "EQUB_LOCKED"
+  | "CYCLE_DUE"
   | "CYCLE_WAITING_ELIGIBILITY"
   | "GENERAL";
 

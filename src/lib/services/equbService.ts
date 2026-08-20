@@ -58,6 +58,297 @@ export async function createEqub(
   return equb;
 }
 
+async function notifyEqubStartDateChange(
+  equbId: string,
+  equbName: string,
+  startDate: string,
+  memberships: Membership[],
+): Promise<void> {
+  for (const membership of memberships) {
+    if (["LEFT", "REMOVED"].includes(membership.status)) continue;
+
+    await createNotification({
+      id: `start-date-${equbId}-${startDate}-${membership.userId}`,
+      userId: membership.userId,
+      type: "EQUB_START_DATE_CHANGED",
+      title: "Equb start date updated",
+      message: `${equbName} now starts on ${startDate}.`,
+      equbId,
+    });
+  }
+}
+
+async function syncStartDateOnActivation(
+  equbId: string,
+  equbName: string,
+  actorId: string,
+  activationDate: string,
+): Promise<void> {
+  const current = await getEqub(equbId);
+  if (!current || current.startDate === activationDate) return;
+
+  const memberships = await getMembershipsForEqub(equbId);
+  const db = getAdminDb();
+  await db.collection(COLLECTIONS.equbs).doc(equbId).update({
+    startDate: activationDate,
+    updatedAt: new Date().toISOString(),
+  });
+
+  await createAuditLog({
+    action: "EQUB_UPDATED",
+    actorId,
+    equbId,
+    entityId: equbId,
+    metadata: {
+      name: equbName,
+      startDateFrom: current.startDate,
+      startDateTo: activationDate,
+      reason: "Activated on a different date than the scheduled start date",
+    },
+  });
+
+  await notifyEqubStartDateChange(equbId, equbName, activationDate, memberships);
+}
+
+async function rejectPendingMembershipsOnActivation(
+  equbId: string,
+  equbName: string,
+  adminId: string,
+): Promise<number> {
+  const db = getAdminDb();
+  const snapshot = await db
+    .collection(COLLECTIONS.memberships)
+    .where("equbId", "==", equbId)
+    .where("status", "==", "PENDING")
+    .get();
+
+  if (snapshot.empty) return 0;
+
+  const rejectedAt = new Date().toISOString();
+  let rejectedCount = 0;
+
+  for (const doc of snapshot.docs) {
+    const membership = doc.data() as Membership;
+    const reason = `${equbName} started before your request was approved.`;
+    await doc.ref.update({
+      status: "REJECTED",
+      rejectedAt,
+      rejectedBy: adminId,
+      rejectionReason: reason,
+    });
+
+    await createAuditLog({
+      action: "MEMBER_REJECTED",
+      actorId: adminId,
+      equbId,
+      affectedUserId: membership.userId,
+      entityId: membership.id,
+      metadata: {
+        reason,
+        autoRejectedOnStart: true,
+      },
+    });
+
+    await createNotification({
+      id: `membership-rejected-${membership.id}`,
+      userId: membership.userId,
+      type: "MEMBERSHIP_REJECTED",
+      title: "Membership request rejected",
+      message: reason,
+      equbId,
+    });
+
+    rejectedCount += 1;
+  }
+
+  return rejectedCount;
+}
+
+async function createStartupContributionObligations(
+  equb: Equb,
+  memberships: Membership[],
+  activationDate: string,
+): Promise<void> {
+  const db = getAdminDb();
+  const cycles = await getCyclesForEqub(equb.id);
+
+  for (const [index, cycle] of cycles.entries()) {
+    const dueDate = index === 0 ? activationDate : cycle.dueDate;
+    for (const membership of memberships) {
+      if (!["ACTIVE", "APPROVED"].includes(membership.status)) continue;
+
+      const existing = await db
+        .collection(COLLECTIONS.obligations)
+        .where("cycleId", "==", cycle.id)
+        .where("membershipId", "==", membership.id)
+        .limit(1)
+        .get();
+      if (!existing.empty) continue;
+
+      const obligation = {
+        id: uuidv4(),
+        equbId: equb.id,
+        cycleId: cycle.id,
+        membershipId: membership.id,
+        userId: membership.userId,
+        amountMinor: equb.contributionAmountMinor,
+        penaltyMinor: 0,
+        totalDueMinor: equb.contributionAmountMinor,
+        status: "PENDING" as const,
+        dueDate,
+      };
+
+      await db.collection(COLLECTIONS.obligations).doc(obligation.id).set(obligation);
+
+      await createAuditLog({
+        action: "CONTRIBUTION_CREATED",
+        actorId: "system",
+        equbId: equb.id,
+        affectedUserId: membership.userId,
+        entityId: obligation.id,
+        metadata: {
+          cycleNumber: cycle.cycleNumber,
+          dueDate,
+          startupContribution: index === 0,
+        },
+      });
+    }
+  }
+}
+
+async function notifyMembersToContribute(
+  equb: Equb,
+  memberships: Membership[],
+  dueDate: string,
+): Promise<void> {
+  for (const membership of memberships) {
+    if (!["ACTIVE", "APPROVED"].includes(membership.status)) continue;
+
+    await createNotification({
+      userId: membership.userId,
+      type: "EQUB_LOCKED",
+      title: "Equb started",
+      message: `${equb.name} has started. Please contribute by ${dueDate} to avoid a rating penalty.`,
+      equbId: equb.id,
+    });
+  }
+}
+
+export async function rejectMembership(
+  membershipId: string,
+  adminId: string,
+  reason?: string,
+): Promise<Membership> {
+  const db = getAdminDb();
+  const ref = db.collection(COLLECTIONS.memberships).doc(membershipId);
+  const doc = await ref.get();
+  if (!doc.exists) throw new Error("Membership not found");
+
+  const membership = doc.data() as Membership;
+  if (membership.status !== "PENDING") {
+    throw new Error("Only pending membership requests can be rejected");
+  }
+
+  const rejectionReason =
+    reason?.trim() || "Your Equb membership request was rejected.";
+  const now = new Date().toISOString();
+  const updates = {
+    status: "REJECTED" as const,
+    rejectedAt: now,
+    rejectedBy: adminId,
+    rejectionReason,
+  };
+
+  await ref.update(updates);
+
+  await createAuditLog({
+    action: "MEMBER_REJECTED",
+    actorId: adminId,
+    equbId: membership.equbId,
+    affectedUserId: membership.userId,
+    entityId: membershipId,
+    metadata: {
+      reason: rejectionReason,
+    },
+  });
+
+  await createNotification({
+    id: `membership-rejected-${membership.id}`,
+    userId: membership.userId,
+    type: "MEMBERSHIP_REJECTED",
+    title: "Membership request rejected",
+    message: rejectionReason,
+    equbId: membership.equbId,
+  });
+
+  return { ...membership, ...updates };
+}
+
+export async function withdrawMembership(
+  membershipId: string,
+  userId: string,
+): Promise<Membership> {
+  const db = getAdminDb();
+  const ref = db.collection(COLLECTIONS.memberships).doc(membershipId);
+  const doc = await ref.get();
+  if (!doc.exists) throw new Error("Membership not found");
+
+  const membership = doc.data() as Membership;
+  if (membership.userId !== userId) {
+    throw new Error("You can only withdraw your own membership");
+  }
+
+  const equb = await getEqub(membership.equbId);
+  if (!equb) throw new Error("Equb not found");
+  if (equb.status === "ACTIVE" || equb.status === "COMPLETED") {
+    throw new Error("You can only withdraw before the Equb starts");
+  }
+  if (!["PENDING", "APPROVED"].includes(membership.status)) {
+    throw new Error("Membership cannot be withdrawn");
+  }
+
+  const now = new Date().toISOString();
+  const updates = {
+    status: "LEFT" as const,
+    removedAt: now,
+    removedBy: userId,
+    removalReason: "Withdrawn before Equb start",
+  };
+
+  await ref.update(updates);
+
+  await createAuditLog({
+    action: "MEMBER_WITHDRAWN",
+    actorId: userId,
+    equbId: membership.equbId,
+    affectedUserId: userId,
+    entityId: membershipId,
+    metadata: {
+      reason: updates.removalReason,
+    },
+  });
+
+  const equbOwner = equb.createdBy;
+  const profile = await getUserProfile(userId);
+  await createNotification({
+    userId: equbOwner,
+    type: "GENERAL",
+    title: "Membership withdrawn",
+    message: `${profile?.displayName ?? userId} withdrew from ${equb.name} before it started.`,
+    equbId: equb.id,
+  });
+
+  await createNotification({
+    userId,
+    type: "MEMBERSHIP_WITHDRAWN",
+    title: "Membership withdrawn",
+    message: `You withdrew from ${equb.name} before it started.`,
+    equbId: equb.id,
+  });
+
+  return { ...membership, ...updates };
+}
+
 export async function updateEqub(
   equbId: string,
   updates: Partial<EqubConfig>,
@@ -68,12 +359,29 @@ export async function updateEqub(
   if (!current) throw new Error("Equb not found");
 
   const memberships = await getMembershipsForEqub(equbId);
-  if (memberships.length > 0) {
-    throw new Error("Cannot edit Equb after members have joined");
+  if (!["DRAFT", "OPEN_FOR_MEMBERS", "LOCKED"].includes(current.status)) {
+    throw new Error("Only draft, open, or locked Equbs can be edited before activation");
+  }
+  const otherFieldChanged =
+    updates.name !== undefined ||
+    updates.description !== undefined ||
+    updates.contributionAmountMinor !== undefined ||
+    updates.currency !== undefined ||
+    updates.frequency !== undefined ||
+    updates.customIntervalDays !== undefined ||
+    updates.numberOfCycles !== undefined ||
+    updates.memberLimit !== undefined ||
+    updates.minimumMemberCount !== undefined ||
+    updates.penaltyEnabled !== undefined ||
+    updates.penaltyType !== undefined ||
+    updates.penaltyAmount !== undefined;
+
+  if (current.status === "ACTIVE") {
+    throw new Error("Cannot edit Equb after it has started");
   }
 
-  if (!["DRAFT", "OPEN_FOR_MEMBERS"].includes(current.status)) {
-    throw new Error("Only draft or open Equbs can be edited");
+  if (memberships.length > 0 && otherFieldChanged) {
+    throw new Error("After members have joined, only the start date can be updated before activation");
   }
 
   const nextConfig: EqubConfig = {
@@ -121,6 +429,10 @@ export async function updateEqub(
     entityId: equbId,
     metadata: { name: updated.name },
   });
+
+  if (updates.startDate && updates.startDate !== current.startDate) {
+    await notifyEqubStartDateChange(equbId, updated.name, updates.startDate, memberships);
+  }
 
   return updated;
 }
@@ -274,27 +586,62 @@ export async function openEqubForMembers(
   return transitionEqubStatus(equbId, "OPEN_FOR_MEMBERS", actorId);
 }
 
-export async function lockEqub(equbId: string, actorId: string): Promise<Equb> {
+export async function lockEqub(
+  equbId: string,
+  actorId: string,
+  options?: { currentDateIso?: string },
+): Promise<Equb> {
   const db = getAdminDb();
-  const memberships = await db
+  const membershipsSnapshot = await db
     .collection(COLLECTIONS.memberships)
     .where("equbId", "==", equbId)
     .where("status", "in", ["ACTIVE", "APPROVED"])
     .get();
+  const memberships = membershipsSnapshot.docs.map((doc) => doc.data() as Membership);
 
   const equb = await getEqub(equbId);
   if (!equb) throw new Error("Equb not found");
 
   if (
-    !canStartEqub(memberships.size, equb.minimumMemberCount, equb.memberLimit)
+    !canStartEqub(memberships.length, equb.minimumMemberCount, equb.memberLimit)
   ) {
     throw new Error(
-      `Cannot start Equb: ${memberships.size}/${equb.minimumMemberCount} minimum members reached; member limit is ${equb.memberLimit}.`,
+      `Cannot start Equb: ${memberships.length}/${equb.minimumMemberCount} approved members reached; member limit is ${equb.memberLimit}.`,
     );
   }
 
+  const activationDate = (
+    options?.currentDateIso ?? new Date().toISOString()
+  ).slice(0, 10);
+  await syncStartDateOnActivation(
+    equbId,
+    equb.name,
+    actorId,
+    activationDate,
+  );
   await transitionEqubStatus(equbId, "LOCKED", actorId);
-  return transitionEqubStatus(equbId, "ACTIVE", actorId);
+  const activated = await transitionEqubStatus(equbId, "ACTIVE", actorId);
+  await createStartupContributionObligations(activated, memberships, activationDate);
+  await notifyMembersToContribute(activated, memberships, activationDate);
+  const rejectedCount = await rejectPendingMembershipsOnActivation(
+    equbId,
+    equb.name,
+    actorId,
+  );
+  if (rejectedCount > 0) {
+    await createAuditLog({
+      action: "EQUB_UPDATED",
+      actorId,
+      equbId,
+      entityId: equbId,
+      metadata: {
+        name: equb.name,
+        autoRejectedPendingMemberships: rejectedCount,
+        reason: "Equb started with pending membership requests",
+      },
+    });
+  }
+  return activated;
 }
 
 export async function requestMembership(

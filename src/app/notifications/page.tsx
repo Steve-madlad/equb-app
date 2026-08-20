@@ -9,6 +9,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { EqubLoading } from "@/components/ui/EqubLoading";
 import { formatDateTime } from "@/lib/utils";
 import type {
   Membership,
@@ -82,15 +83,13 @@ export default function NotificationsPage() {
   }
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
+    return <EqubLoading />;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar
-        links={[
-          ...(profile?.role === "ADMIN" ? [{ href: "/admin", label: "Admin" }] : []),
-        ]}
+        links={[]}
         userName={profile?.displayName}
         isAdmin={profile?.role === "ADMIN"}
         searchHref={profile?.role === "ADMIN" ? "/equbs" : "/search"}

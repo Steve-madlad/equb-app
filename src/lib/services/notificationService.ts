@@ -3,6 +3,7 @@ import { COLLECTIONS, getAdminDb } from "@/lib/firebase/admin";
 import type { Notification, NotificationType } from "@/lib/domain/types";
 
 export async function createNotification(params: {
+  id?: string;
   userId: string;
   type: NotificationType;
   title: string;
@@ -10,9 +11,10 @@ export async function createNotification(params: {
   equbId?: string;
 }): Promise<Notification> {
   const db = getAdminDb();
+  const { id, ...rest } = params;
   const notification: Notification = {
-    id: uuidv4(),
-    ...params,
+    ...rest,
+    id: id ?? uuidv4(),
     read: false,
     createdAt: new Date().toISOString(),
   };

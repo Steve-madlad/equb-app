@@ -7,6 +7,14 @@ import { Plus } from "lucide-react";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { Navbar } from "@/components/layout/Navbar";
 import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -17,6 +25,7 @@ import {
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { EqubLoading } from "@/components/ui/EqubLoading";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +39,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { formatMoney } from "@/lib/domain/money";
 import type { Equb, Membership, UserProfile } from "@/lib/domain/types";
+import { toast } from "sonner";
+import { getBrowserTestDate, getTodayIsoDate } from "@/lib/testClock";
+import { Sparkles } from "lucide-react";
 
 type EqubSummary = Equb & {
   activeMemberCount?: number;
@@ -168,8 +180,15 @@ function CreateEqubDialog({
     frequency: "MONTHLY" as "WEEKLY" | "MONTHLY",
     memberLimit: 10,
     minimumMemberCount: 2,
-    startDate: new Date().toISOString().split("T")[0],
+    startDate: getTodayIsoDate(),
   });
+
+  useEffect(() => {
+    const testDate = getBrowserTestDate();
+    if (testDate) {
+      setForm((current) => ({ ...current, startDate: testDate }));
+    }
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -194,10 +213,13 @@ function CreateEqubDialog({
     if (res.ok) {
       const { equb } = await res.json();
       setOpen(false);
+      toast.success("Equb created");
       onCreated(equb.id);
     } else {
       const body = await res.json().catch(() => null);
-      setError(body?.error ?? "Unable to create Equb.");
+      const message = body?.error ?? "Unable to create Equb.";
+      setError(message);
+      toast.error(message);
     }
 
     setLoading(false);
@@ -313,7 +335,7 @@ function CreateEqubDialog({
               <label className="text-sm font-medium">Minimum members to start</label>
               <Input
                 type="number"
-                min="1"
+                min="2"
                 max={form.memberLimit}
                 value={form.minimumMemberCount}
                 onChange={(event) =>
@@ -440,11 +462,7 @@ export default function DashboardPage() {
   }, [totalPages]);
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
-      </div>
-    );
+    return <EqubLoading />;
   }
 
   return (
@@ -480,98 +498,116 @@ export default function DashboardPage() {
           ) : null}
         </div>
 
-        <section className="mt-8">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Your Equbs</h2>
-              <p className="text-sm text-gray-600">{formatRoleCopy(profile?.role)}</p>
-            </div>
+        {myEqubs.length === 0 && discoverEqubs.length === 0 ? (
+          <div className="mt-8">
+            <Empty className="rounded-xl border bg-white p-10">
+              <EmptyContent>
+                <EmptyHeader>
+                  <EmptyMedia>
+                    <Sparkles className="h-5 w-5 text-muted-foreground" />
+                  </EmptyMedia>
+                  <EmptyTitle>No Equbs yet</EmptyTitle>
+                  <EmptyDescription>
+                    There are no Equbs to show right now.
+                  </EmptyDescription>
+                </EmptyHeader>
+                {profile?.role === "ADMIN" ? (
+                  <CreateEqubDialog
+                    token={token}
+                    onCreated={(equbId) => {
+                      window.location.href = `/equbs/${equbId}`;
+                    }}
+                  />
+                ) : null}
+              </EmptyContent>
+            </Empty>
           </div>
+        ) : (
+          <>
+            {myEqubs.length > 0 ? (
+              <section className="mt-8">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Your Equbs</h2>
+                    <p className="text-sm text-gray-600">
+                      {formatRoleCopy(profile?.role)}
+                    </p>
+                  </div>
+                </div>
 
-          {myEqubs.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-sm text-gray-500">
-                  You are not part of any active Equbs yet.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {myEqubs.map((equb) => {
-                const membership = membershipStatuses.find(({ membership }) => membership.equbId === equb.id)?.membership;
-                const isManaged = profile?.role === "ADMIN" && equb.createdBy === profile.id;
+                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                  {myEqubs.map((equb) => {
+                    const membership = membershipStatuses.find(
+                      ({ membership }) => membership.equbId === equb.id,
+                    )?.membership;
+                    const isManaged = profile?.role === "ADMIN" && equb.createdBy === profile.id;
 
-                return (
-                  <Link key={equb.id} href={`/equbs/${equb.id}`} className="block h-full">
-                    <EqubCard
-                      equb={equb}
-                      membership={membership}
-                      managedByYou={isManaged}
-                      highlightTone={getMembershipTone(membership?.status)}
-                    />
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </section>
+                    return (
+                      <Link key={equb.id} href={`/equbs/${equb.id}`} className="block h-full">
+                        <EqubCard
+                          equb={equb}
+                          membership={membership}
+                          managedByYou={isManaged}
+                          highlightTone={getMembershipTone(membership?.status)}
+                        />
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
 
-        <section className="mt-10">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Discover Equbs</h2>
-              <p className="text-sm text-gray-600">
-                Browse the other active Equbs available in the system.
-              </p>
-            </div>
-            <p className="text-sm text-gray-500">
-              Page {safePage} of {totalPages}
-            </p>
-          </div>
+            {discoverEqubs.length > 0 ? (
+              <section className={myEqubs.length > 0 ? "mt-10" : "mt-8"}>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Discover Equbs
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                      Browse the other active Equbs available in the system.
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Page {safePage} of {totalPages}
+                  </p>
+                </div>
 
-          {pagedDiscoverEqubs.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-sm text-gray-500">
-                  No additional Equbs available right now.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {pagedDiscoverEqubs.map((equb) => (
-                <Link key={equb.id} href={`/equbs/${equb.id}`} className="block h-full">
-                  <EqubCard equb={equb} />
-                </Link>
-              ))}
-            </div>
-          )}
+                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                  {pagedDiscoverEqubs.map((equb) => (
+                    <Link key={equb.id} href={`/equbs/${equb.id}`} className="block h-full">
+                      <EqubCard equb={equb} />
+                    </Link>
+                  ))}
+                </div>
 
-          <div className="mt-6 flex items-center justify-between">
-            <div />
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                disabled={safePage === 1}
-              >
-                Previous
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                disabled={safePage === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </section>
+                <div className="mt-6 flex items-center justify-between">
+                  <div />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setPage((current) => Math.max(1, current - 1))}
+                      disabled={safePage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                      disabled={safePage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </section>
+            ) : null}
+          </>
+        )}
       </main>
     </div>
   );
