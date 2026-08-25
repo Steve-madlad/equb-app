@@ -1,5 +1,9 @@
+import { getChapaPaymentProvider } from "./ChapaPaymentProvider";
+import {
+  generateIdempotencyKey,
+  getMockPaymentProvider,
+} from "./MockPaymentProvider";
 import type { PaymentProvider } from "./PaymentProvider";
-import { generateIdempotencyKey, getMockPaymentProvider } from "./MockPaymentProvider";
 
 export { generateIdempotencyKey };
 
@@ -11,8 +15,8 @@ export function getPaymentProvider(): PaymentProvider {
   switch (provider) {
     case "mock":
       return getMockPaymentProvider();
-    // Future: case "telebirr": return new TelebirrPaymentProvider();
-    // Future: case "chapa": return new ChapaPaymentProvider();
+    case "chapa":
+      return getChapaPaymentProvider();
     default:
       return getMockPaymentProvider();
   }

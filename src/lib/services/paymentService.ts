@@ -1,4 +1,5 @@
 import { formatMoney } from "@/lib/domain/money";
+import { isObligationOverdue } from "@/lib/domain/paymentTiming";
 import type {
   ContributionObligation,
   Cycle,
@@ -9,6 +10,7 @@ import type {
 import { COLLECTIONS, getAdminDb } from "@/lib/firebase/admin";
 import { adjustUserRating } from "@/lib/firebase/auth";
 import { generateIdempotencyKey, getPaymentProvider } from "@/lib/payments";
+import type { DocumentReference } from "firebase-admin/firestore";
 import { v4 as uuidv4 } from "uuid";
 import { createAuditLog } from "./auditService";
 import { createLedgerEntry } from "./ledgerService";
@@ -62,6 +64,7 @@ export async function createObligationsForCycle(
 export async function initiatePayment(
   obligationId: string,
   userId: string,
+  currentDateIso: string = new Date().toISOString(),
 ): Promise<PaymentRecord> {
   const db = getAdminDb();
   const obligationRef = db
@@ -75,6 +78,13 @@ export async function initiatePayment(
   if (obligation.userId !== userId) throw new Error("Unauthorized");
   if (obligation.status === "PAID") throw new Error("Already paid");
 
+  if (
+    obligation.status === "PENDING" &&
+    isObligationOverdue(obligation, currentDateIso)
+  ) {
+    await markObligationOverdue(obligationRef, obligation);
+  }
+
   const existingPayment = await db
     .collection(COLLECTIONS.payments)
     .where("obligationId", "==", obligationId)
@@ -83,7 +93,27 @@ export async function initiatePayment(
     .get();
 
   if (!existingPayment.empty) {
-    return existingPayment.docs[0].data() as PaymentRecord;
+    const existingDoc = existingPayment.docs[0];
+    const existing = existingDoc.data() as PaymentRecord;
+    if (existing.status === "SUCCESS") return existing;
+
+    // The mock provider is in memory, so a server restart can leave Firestore
+    // with a transaction that the provider no longer knows about.
+    if (getPaymentProvider().name === "mock") {
+      try {
+        await getPaymentProvider().getPaymentStatus(
+          existing.providerTransactionId,
+        );
+        return existing;
+      } catch {
+        await existingDoc.ref.update({
+          status: "CANCELLED",
+          failureReason: "Mock payment session expired",
+        });
+      }
+    } else {
+      return existing;
+    }
   }
 
   const idempotencyKey = generateIdempotencyKey();
@@ -128,6 +158,7 @@ export async function initiatePayment(
 export async function verifyAndRecordPayment(
   providerTransactionId: string,
   actorId: string = "system",
+  currentDateIso: string = new Date().toISOString(),
 ): Promise<PaymentRecord> {
   const db = getAdminDb();
   const provider = getPaymentProvider();
@@ -144,6 +175,18 @@ export async function verifyAndRecordPayment(
 
   if (payment.status === "SUCCESS") return payment;
 
+  const obligationRef = db
+    .collection(COLLECTIONS.obligations)
+    .doc(payment.obligationId);
+  const obligationDoc = await obligationRef.get();
+  const obligation = obligationDoc.data() as ContributionObligation;
+  if (
+    obligation.status === "PENDING" &&
+    isObligationOverdue(obligation, currentDateIso)
+  ) {
+    await markObligationOverdue(obligationRef, obligation);
+  }
+
   const verification = await provider.verifyPayment(providerTransactionId);
 
   return db.runTransaction(async (transaction) => {
@@ -152,16 +195,22 @@ export async function verifyAndRecordPayment(
 
     if (freshPayment.status === "SUCCESS") return freshPayment;
 
-    if (verification.status === "SUCCESS") {
+    if (
+      verification.status === "SUCCESS" &&
+      verification.verifiedAmountMinor === freshPayment.amountMinor
+    ) {
+      const freshObligationRef = db
+        .collection(COLLECTIONS.obligations)
+        .doc(freshPayment.obligationId);
+      const freshObligationDoc = await transaction.get(freshObligationRef);
+      const freshObligation =
+        freshObligationDoc.data() as ContributionObligation;
+
       transaction.update(paymentDoc.ref, {
         status: "SUCCESS",
         verifiedAt: new Date().toISOString(),
       });
-
-      const obligationRef = db
-        .collection(COLLECTIONS.obligations)
-        .doc(freshPayment.obligationId);
-      transaction.update(obligationRef, {
+      transaction.update(freshObligationRef, {
         status: "PAID",
         paidAt: new Date().toISOString(),
         paymentId: freshPayment.id,
@@ -170,6 +219,8 @@ export async function verifyAndRecordPayment(
       await createLedgerEntry({
         equbId: freshPayment.equbId,
         userId: freshPayment.userId,
+        membershipId: freshObligation.membershipId,
+        cycleId: freshObligation.cycleId,
         type: "CONTRIBUTION_RECEIVED",
         amountMinor: freshPayment.amountMinor,
         currency: "ETB",
@@ -198,6 +249,13 @@ export async function verifyAndRecordPayment(
       return { ...freshPayment, status: "SUCCESS" as const };
     }
 
+    if (
+      verification.status === "SUCCESS" &&
+      verification.verifiedAmountMinor !== freshPayment.amountMinor
+    ) {
+      throw new Error("Verified payment amount does not match the obligation");
+    }
+
     transaction.update(paymentDoc.ref, {
       status: verification.status,
       failureReason: verification.failureReason,
@@ -224,36 +282,72 @@ export async function markOverdueObligationsForDate(
   currentDateIso: string = new Date().toISOString(),
 ): Promise<number> {
   const db = getAdminDb();
-  const today = currentDateIso.slice(0, 10);
-
   const snapshot = await db
     .collection(COLLECTIONS.obligations)
     .where("status", "==", "PENDING")
-    .where("dueDate", "<", today)
     .get();
 
   let count = 0;
   for (const doc of snapshot.docs) {
-    await doc.ref.update({ status: "OVERDUE" });
     const obligation = doc.data() as ContributionObligation;
-
-    await adjustUserRating(
-      obligation.userId,
-      -5,
-      `Contribution overdue for Equb ${obligation.equbId}`,
-    );
-
-    await createNotification({
-      userId: obligation.userId,
-      type: "CONTRIBUTION_OVERDUE",
-      title: "Contribution Overdue",
-      message: `Your contribution of ${formatMoney(obligation.totalDueMinor)} is overdue.`,
-      equbId: obligation.equbId,
-    });
-    count++;
+    if (isObligationOverdue(obligation, currentDateIso)) {
+      if (await markObligationOverdue(doc.ref, obligation)) count++;
+    }
   }
 
   return count;
+}
+
+export async function markOverdueObligationsForEqub(
+  equbId: string,
+  currentDateIso: string = new Date().toISOString(),
+): Promise<number> {
+  const db = getAdminDb();
+  const snapshot = await db
+    .collection(COLLECTIONS.obligations)
+    .where("equbId", "==", equbId)
+    .get();
+
+  let count = 0;
+  for (const doc of snapshot.docs) {
+    const obligation = doc.data() as ContributionObligation;
+    if (
+      obligation.status === "PENDING" &&
+      isObligationOverdue(obligation, currentDateIso)
+    ) {
+      if (await markObligationOverdue(doc.ref, obligation)) count++;
+    }
+  }
+  return count;
+}
+
+async function markObligationOverdue(
+  obligationRef: DocumentReference,
+  obligation: ContributionObligation,
+): Promise<boolean> {
+  const db = getAdminDb();
+  const marked = await db.runTransaction(async (transaction) => {
+    const currentDoc = await transaction.get(obligationRef);
+    const current = currentDoc.data() as ContributionObligation | undefined;
+    if (!currentDoc.exists || current?.status !== "PENDING") return false;
+    transaction.update(obligationRef, { status: "OVERDUE" });
+    return true;
+  });
+  if (!marked) return false;
+
+  await adjustUserRating(
+    obligation.userId,
+    -5,
+    `Contribution overdue for Equb ${obligation.equbId}`,
+  );
+  await createNotification({
+    userId: obligation.userId,
+    type: "CONTRIBUTION_OVERDUE",
+    title: "Contribution Overdue",
+    message: `Your contribution of ${formatMoney(obligation.totalDueMinor)} is overdue.`,
+    equbId: obligation.equbId,
+  });
+  return true;
 }
 
 export async function notifyAdminsOfDuePayoutCycles(
@@ -269,7 +363,10 @@ export async function notifyAdminsOfDuePayoutCycles(
     if (cycle.dueDate > today) continue;
     if (cycle.status === "COMPLETED" || cycle.status === "DRAWN") continue;
 
-    const equbDoc = await db.collection(COLLECTIONS.equbs).doc(cycle.equbId).get();
+    const equbDoc = await db
+      .collection(COLLECTIONS.equbs)
+      .doc(cycle.equbId)
+      .get();
     const equb = equbDoc.exists ? (equbDoc.data() as Equb) : null;
     if (!equb) continue;
 

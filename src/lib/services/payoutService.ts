@@ -1,14 +1,24 @@
-import { v4 as uuidv4 } from "uuid";
-import { COLLECTIONS, getAdminDb } from "@/lib/firebase/admin";
 import { getEligibleMembers } from "@/lib/domain/eligibility";
-import { getPayoutSelectionStrategy } from "@/lib/payout/RandomSelectionStrategy";
-import { createAuditLog } from "./auditService";
-import { createLedgerEntry } from "./ledgerService";
-import { createNotification } from "./notificationService";
-import { getObligationsForCycle } from "./paymentService";
-import { getMembershipsForEqub, getEqub, getCyclesForEqub } from "./equbService";
 import { formatMoney } from "@/lib/domain/money";
-import type { PayoutDraw, Payout, Cycle } from "@/lib/domain/types";
+import type { Cycle, Payout, PayoutDraw } from "@/lib/domain/types";
+import { COLLECTIONS, getAdminDb } from "@/lib/firebase/admin";
+import { getPayoutSelectionStrategy } from "@/lib/payout/RandomSelectionStrategy";
+import { v4 as uuidv4 } from "uuid";
+import { createAuditLog } from "./auditService";
+import {
+  getCyclesForEqub,
+  getEqub,
+  getMembershipsForEqub,
+} from "./equbService";
+import {
+  createLedgerEntry,
+  getSettledContributionTotalForCycle,
+} from "./ledgerService";
+import { createNotification } from "./notificationService";
+import {
+  getObligationsForCycle,
+  markOverdueObligationsForEqub,
+} from "./paymentService";
 
 export interface DrawPayoutResult {
   draw: PayoutDraw;
@@ -32,12 +42,16 @@ export async function drawPayoutRecipient(
   const currentDateIso = options?.currentDateIso ?? new Date().toISOString();
   const currentDate = currentDateIso.slice(0, 10);
 
+  await markOverdueObligationsForEqub(equbId, currentDateIso);
+  const settledPoolAmount = await getSettledContributionTotalForCycle(cycleId);
+
   return db.runTransaction(async (transaction) => {
     const cycleDoc = await transaction.get(cycleRef);
     if (!cycleDoc.exists) throw new Error("Cycle not found");
 
     const cycle = cycleDoc.data() as Cycle;
-    if (cycle.equbId !== equbId) throw new Error("Cycle does not belong to Equb");
+    if (cycle.equbId !== equbId)
+      throw new Error("Cycle does not belong to Equb");
 
     if (cycle.payoutRecipientId || cycle.drawId) {
       throw new Error("Payout already drawn for this cycle");
@@ -47,7 +61,11 @@ export async function drawPayoutRecipient(
       throw new Error(`Cycle is not due until ${cycle.dueDate}`);
     }
 
-    if (!["ACTIVE", "DRAW_PENDING", "WAITING_FOR_ELIGIBILITY"].includes(cycle.status)) {
+    if (
+      !["ACTIVE", "DRAW_PENDING", "WAITING_FOR_ELIGIBILITY"].includes(
+        cycle.status,
+      )
+    ) {
       throw new Error(`Cycle not ready for draw: ${cycle.status}`);
     }
 
@@ -59,7 +77,7 @@ export async function drawPayoutRecipient(
 
     const memberships = await getMembershipsForEqub(equbId);
     const activeMemberships = memberships.filter((m) =>
-      ["ACTIVE", "APPROVED"].includes(m.status)
+      ["ACTIVE", "APPROVED"].includes(m.status),
     );
 
     const cycleObligations = await getObligationsForCycle(cycleId);
@@ -69,26 +87,31 @@ export async function drawPayoutRecipient(
       .where("equbId", "==", equbId)
       .get();
     const allObligations = allObligationsSnapshot.docs.map(
-      (d) => d.data() as import("@/lib/domain/types").ContributionObligation
+      (d) => d.data() as import("@/lib/domain/types").ContributionObligation,
     );
 
     const eligible = getEligibleMembers(
       activeMemberships,
       cycleObligations,
-      allObligations
+      allObligations,
     );
 
+    if (settledPoolAmount <= 0) {
+      throw new Error(
+        "No settled contributions are available for this cycle's payout.",
+      );
+    }
+
     if (eligible.length === 0) {
-      transaction.update(cycleRef, { status: "WAITING_FOR_ELIGIBILITY" });
       await createAuditLog({
         action: "PAYOUT_DRAW_STARTED",
         actorId: adminId,
         equbId,
         entityId: cycleId,
-        metadata: { result: "NO_ELIGIBLE_MEMBERS" },
+        metadata: { result: "NO_ELIGIBLE_MEMBERS", cycleContinues: true },
       });
       throw new Error(
-        "No eligible members for payout. Cycle set to WAITING_FOR_ELIGIBILITY."
+        "No eligible members for payout. The cycle remains open for eligible members.",
       );
     }
 
@@ -106,7 +129,7 @@ export async function drawPayoutRecipient(
       performedBy: adminId,
       performedAt: new Date().toISOString(),
       randomSeed: result.randomSeed,
-      poolAmountMinor: cycle.poolAmountMinor,
+      poolAmountMinor: settledPoolAmount,
     };
 
     const payout: Payout = {
@@ -115,7 +138,7 @@ export async function drawPayoutRecipient(
       cycleId,
       membershipId: result.selectedMembership.id,
       userId: result.selectedMembership.userId,
-      amountMinor: cycle.poolAmountMinor,
+      amountMinor: settledPoolAmount,
       status: "PENDING",
       drawId,
       createdAt: new Date().toISOString(),
@@ -125,6 +148,7 @@ export async function drawPayoutRecipient(
     transaction.set(db.collection(COLLECTIONS.payouts).doc(payout.id), payout);
     transaction.update(cycleRef, {
       status: "DRAWN",
+      poolAmountMinor: settledPoolAmount,
       payoutRecipientId: result.selectedMembership.userId,
       drawId,
       drawnAt: new Date().toISOString(),
@@ -135,7 +159,7 @@ export async function drawPayoutRecipient(
         hasReceivedPayout: true,
         payoutReceivedAt: new Date().toISOString(),
         payoutCycleId: cycleId,
-      }
+      },
     );
 
     await createAuditLog({
@@ -154,7 +178,7 @@ export async function drawPayoutRecipient(
       metadata: {
         eligibleCount: eligible.length,
         randomSeed: result.randomSeed,
-        poolAmount: formatMoney(cycle.poolAmountMinor),
+        poolAmount: formatMoney(settledPoolAmount),
       },
     });
 
@@ -164,7 +188,7 @@ export async function drawPayoutRecipient(
       membershipId: result.selectedMembership.id,
       cycleId,
       type: "PAYOUT_OBLIGATION",
-      amountMinor: cycle.poolAmountMinor,
+      amountMinor: settledPoolAmount,
       currency: "ETB",
       description: `Payout obligation for cycle ${cycle.cycleNumber}`,
       referenceId: payout.id,
@@ -176,7 +200,7 @@ export async function drawPayoutRecipient(
       userId: result.selectedMembership.userId,
       type: "PAYOUT_RECEIVED",
       title: "Congratulations! You won the Equb draw",
-      message: `You have been selected to receive ${formatMoney(cycle.poolAmountMinor)} for cycle ${cycle.cycleNumber}.`,
+      message: `You have been selected to receive ${formatMoney(settledPoolAmount)} for cycle ${cycle.cycleNumber}.`,
       equbId,
     });
 
@@ -198,7 +222,7 @@ export async function drawPayoutRecipient(
 
 export async function completePayout(
   payoutId: string,
-  adminId: string
+  adminId: string,
 ): Promise<Payout> {
   const db = getAdminDb();
   const payoutRef = db.collection(COLLECTIONS.payouts).doc(payoutId);
@@ -240,23 +264,32 @@ export async function completePayout(
     const cycles = await getCyclesForEqub(payout.equbId);
     const currentCycle = cycles.find((c) => c.id === payout.cycleId);
     if (currentCycle) {
-      transaction.update(db.collection(COLLECTIONS.cycles).doc(currentCycle.id), {
-        status: "COMPLETED",
-        completedAt: new Date().toISOString(),
-      });
-
-      const nextCycle = cycles.find(
-        (c) => c.cycleNumber === currentCycle.cycleNumber + 1
-      );
-      if (nextCycle) {
-        transaction.update(db.collection(COLLECTIONS.cycles).doc(nextCycle.id), {
-          status: "ACTIVE",
-        });
-      } else {
-        transaction.update(db.collection(COLLECTIONS.equbs).doc(payout.equbId), {
+      transaction.update(
+        db.collection(COLLECTIONS.cycles).doc(currentCycle.id),
+        {
           status: "COMPLETED",
           completedAt: new Date().toISOString(),
-        });
+        },
+      );
+
+      const nextCycle = cycles.find(
+        (c) => c.cycleNumber === currentCycle.cycleNumber + 1,
+      );
+      if (nextCycle) {
+        transaction.update(
+          db.collection(COLLECTIONS.cycles).doc(nextCycle.id),
+          {
+            status: "ACTIVE",
+          },
+        );
+      } else {
+        transaction.update(
+          db.collection(COLLECTIONS.equbs).doc(payout.equbId),
+          {
+            status: "COMPLETED",
+            completedAt: new Date().toISOString(),
+          },
+        );
       }
     }
 
@@ -264,7 +297,9 @@ export async function completePayout(
   });
 }
 
-export async function getDrawForCycle(cycleId: string): Promise<PayoutDraw | null> {
+export async function getDrawForCycle(
+  cycleId: string,
+): Promise<PayoutDraw | null> {
   const db = getAdminDb();
   const snapshot = await db
     .collection(COLLECTIONS.draws)

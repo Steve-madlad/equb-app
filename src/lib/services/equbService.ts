@@ -1,5 +1,4 @@
 import {
-  calculatePoolAmount,
   generateCycleDates,
   validateEqubConfig,
 } from "@/lib/domain/cycleUtils";
@@ -58,6 +57,37 @@ export async function createEqub(
   return equb;
 }
 
+export async function grantPayoutEligibilityException(
+  membershipId: string,
+  adminId: string,
+  reason: string,
+): Promise<Membership> {
+  const db = getAdminDb();
+  const membershipRef = db
+    .collection(COLLECTIONS.memberships)
+    .doc(membershipId);
+  const membershipDoc = await membershipRef.get();
+  if (!membershipDoc.exists) throw new Error("Membership not found");
+
+  const membership = membershipDoc.data() as Membership;
+  const exception = {
+    grantedBy: adminId,
+    grantedAt: new Date().toISOString(),
+    reason,
+  };
+  await membershipRef.update({ payoutEligibilityException: exception });
+  await createAuditLog({
+    action: "PAYOUT_ELIGIBILITY_EXCEPTION_GRANTED",
+    actorId: adminId,
+    equbId: membership.equbId,
+    affectedUserId: membership.userId,
+    entityId: membershipId,
+    reason,
+    metadata: { type: "PAYOUT_ELIGIBILITY_EXCEPTION" },
+  });
+  return { ...membership, payoutEligibilityException: exception };
+}
+
 async function notifyEqubStartDateChange(
   equbId: string,
   equbName: string,
@@ -107,7 +137,12 @@ async function syncStartDateOnActivation(
     },
   });
 
-  await notifyEqubStartDateChange(equbId, equbName, activationDate, memberships);
+  await notifyEqubStartDateChange(
+    equbId,
+    equbName,
+    activationDate,
+    memberships,
+  );
 }
 
 async function rejectPendingMembershipsOnActivation(
@@ -198,7 +233,10 @@ async function createStartupContributionObligations(
         dueDate,
       };
 
-      await db.collection(COLLECTIONS.obligations).doc(obligation.id).set(obligation);
+      await db
+        .collection(COLLECTIONS.obligations)
+        .doc(obligation.id)
+        .set(obligation);
 
       await createAuditLog({
         action: "CONTRIBUTION_CREATED",
@@ -360,7 +398,9 @@ export async function updateEqub(
 
   const memberships = await getMembershipsForEqub(equbId);
   if (!["DRAFT", "OPEN_FOR_MEMBERS", "LOCKED"].includes(current.status)) {
-    throw new Error("Only draft, open, or locked Equbs can be edited before activation");
+    throw new Error(
+      "Only draft, open, or locked Equbs can be edited before activation",
+    );
   }
   const otherFieldChanged =
     updates.name !== undefined ||
@@ -381,7 +421,9 @@ export async function updateEqub(
   }
 
   if (memberships.length > 0 && otherFieldChanged) {
-    throw new Error("After members have joined, only the start date can be updated before activation");
+    throw new Error(
+      "After members have joined, only the start date can be updated before activation",
+    );
   }
 
   const nextConfig: EqubConfig = {
@@ -431,7 +473,12 @@ export async function updateEqub(
   });
 
   if (updates.startDate && updates.startDate !== current.startDate) {
-    await notifyEqubStartDateChange(equbId, updated.name, updates.startDate, memberships);
+    await notifyEqubStartDateChange(
+      equbId,
+      updated.name,
+      updates.startDate,
+      memberships,
+    );
   }
 
   return updated;
@@ -554,18 +601,6 @@ async function createCyclesForEqub(
     equb.customIntervalDays,
   );
 
-  const membershipsSnapshot = await db
-    .collection(COLLECTIONS.memberships)
-    .where("equbId", "==", equbId)
-    .where("status", "in", ["ACTIVE", "APPROVED"])
-    .get();
-
-  const memberCount = membershipsSnapshot.size;
-  const poolAmount = calculatePoolAmount(
-    equb.contributionAmountMinor,
-    memberCount,
-  );
-
   dates.forEach((dueDate, index) => {
     const cycle: Cycle = {
       id: uuidv4(),
@@ -573,7 +608,7 @@ async function createCyclesForEqub(
       cycleNumber: index + 1,
       dueDate,
       status: index === 0 ? "ACTIVE" : "UPCOMING",
-      poolAmountMinor: poolAmount,
+      poolAmountMinor: 0,
     };
     transaction.set(db.collection(COLLECTIONS.cycles).doc(cycle.id), cycle);
   });
@@ -597,7 +632,9 @@ export async function lockEqub(
     .where("equbId", "==", equbId)
     .where("status", "in", ["ACTIVE", "APPROVED"])
     .get();
-  const memberships = membershipsSnapshot.docs.map((doc) => doc.data() as Membership);
+  const memberships = membershipsSnapshot.docs.map(
+    (doc) => doc.data() as Membership,
+  );
 
   const equb = await getEqub(equbId);
   if (!equb) throw new Error("Equb not found");
@@ -613,15 +650,14 @@ export async function lockEqub(
   const activationDate = (
     options?.currentDateIso ?? new Date().toISOString()
   ).slice(0, 10);
-  await syncStartDateOnActivation(
-    equbId,
-    equb.name,
-    actorId,
-    activationDate,
-  );
+  await syncStartDateOnActivation(equbId, equb.name, actorId, activationDate);
   await transitionEqubStatus(equbId, "LOCKED", actorId);
   const activated = await transitionEqubStatus(equbId, "ACTIVE", actorId);
-  await createStartupContributionObligations(activated, memberships, activationDate);
+  await createStartupContributionObligations(
+    activated,
+    memberships,
+    activationDate,
+  );
   await notifyMembersToContribute(activated, memberships, activationDate);
   const rejectedCount = await rejectPendingMembershipsOnActivation(
     equbId,
@@ -854,8 +890,8 @@ export async function getPendingMembershipRequestsForAdmin(
     });
   }
 
-  return requests.sort(
-    (a, b) => b.membership.joinedAt.localeCompare(a.membership.joinedAt),
+  return requests.sort((a, b) =>
+    b.membership.joinedAt.localeCompare(a.membership.joinedAt),
   );
 }
 

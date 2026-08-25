@@ -1,23 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { onIdTokenChanged, signOut } from "firebase/auth";
-import { Bell, CheckCheck, MailOpen } from "lucide-react";
-import { getFirebaseAuth } from "@/lib/firebase/client";
 import { Navbar } from "@/components/layout/Navbar";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Card } from "@/components/ui/Card";
 import { EqubLoading } from "@/components/ui/EqubLoading";
-import { formatDateTime } from "@/lib/utils";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import type {
+  Equb,
   Membership,
   Notification,
-  Equb,
   UserProfile,
 } from "@/lib/domain/types";
+import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { PendingMembershipRequest } from "@/lib/services/equbService";
+import { formatDateTime } from "@/lib/utils";
+import { onIdTokenChanged, signOut } from "firebase/auth";
+import { Bell, CheckCheck, MailOpen } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 type NotificationFeedResponse = {
   profile: UserProfile;
@@ -31,8 +31,12 @@ export default function NotificationsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [membershipStatuses, setMembershipStatuses] = useState<NotificationFeedResponse["membershipStatuses"]>([]);
-  const [adminRequests, setAdminRequests] = useState<PendingMembershipRequest[]>([]);
+  const [membershipStatuses, setMembershipStatuses] = useState<
+    NotificationFeedResponse["membershipStatuses"]
+  >([]);
+  const [adminRequests, setAdminRequests] = useState<
+    PendingMembershipRequest[]
+  >([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -75,10 +79,28 @@ export default function NotificationsPage() {
     if (res.ok) {
       setNotifications((current) =>
         current.map((notification) =>
-          notification.id === notificationId ? { ...notification, read: true } : notification
-        )
+          notification.id === notificationId
+            ? { ...notification, read: true }
+            : notification,
+        ),
       );
       setUnreadCount((current) => Math.max(0, current - 1));
+    }
+  }
+
+  async function markAllRead() {
+    const user = getFirebaseAuth().currentUser;
+    if (!user || unreadCount === 0) return;
+    const token = await user.getIdToken();
+    const res = await fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      setNotifications((current) =>
+        current.map((notification) => ({ ...notification, read: true })),
+      );
+      setUnreadCount(0);
     }
   }
 
@@ -94,7 +116,9 @@ export default function NotificationsPage() {
         isAdmin={profile?.role === "ADMIN"}
         searchHref={profile?.role === "ADMIN" ? "/equbs" : "/search"}
         notificationCount={unreadCount}
-        onSignOut={() => signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))}
+        onSignOut={() =>
+          signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))
+        }
       />
 
       <main className="mx-auto max-w-7xl px-4 py-8">
@@ -105,9 +129,20 @@ export default function NotificationsPage() {
               Your latest Equb updates, admission requests, and approval status.
             </p>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600">
-            <Bell className="h-4 w-4" />
-            {unreadCount} unread
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600">
+              <Bell className="h-4 w-4" />
+              {unreadCount} unread
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={markAllRead}
+              disabled={unreadCount === 0}
+            >
+              <CheckCheck className="mr-2 h-4 w-4" />
+              Mark all read
+            </Button>
           </div>
         </div>
 
@@ -118,7 +153,9 @@ export default function NotificationsPage() {
               description="Requests for the Equbs you created. Review them from the Equb page."
             >
               {adminRequests.length === 0 ? (
-                <p className="text-sm text-gray-500">No pending admission requests right now.</p>
+                <p className="text-sm text-gray-500">
+                  No pending admission requests right now.
+                </p>
               ) : (
                 <div className="space-y-3">
                   {adminRequests.map(({ membership, equb, requester }) => (
@@ -133,7 +170,9 @@ export default function NotificationsPage() {
                           </p>
                           <p className="text-sm text-gray-600">
                             Requested to join{" "}
-                            <span className="font-medium text-gray-900">{equb.name}</span>
+                            <span className="font-medium text-gray-900">
+                              {equb.name}
+                            </span>
                           </p>
                           <p className="mt-1 text-xs text-gray-500">
                             Submitted {formatDateTime(membership.joinedAt)}
@@ -161,7 +200,9 @@ export default function NotificationsPage() {
               description="Your membership requests and current standing in each Equb."
             >
               {membershipStatuses.length === 0 ? (
-                <p className="text-sm text-gray-500">You have no active or pending membership records.</p>
+                <p className="text-sm text-gray-500">
+                  You have no active or pending membership records.
+                </p>
               ) : (
                 <div className="space-y-3">
                   {membershipStatuses.map(({ membership, equb }) => (
@@ -171,7 +212,9 @@ export default function NotificationsPage() {
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <p className="font-medium text-gray-900">{equb?.name ?? "Equb"}</p>
+                          <p className="font-medium text-gray-900">
+                            {equb?.name ?? "Equb"}
+                          </p>
                           <p className="text-sm text-gray-600">
                             {membership.status === "PENDING"
                               ? "Your request is waiting for admin approval."
@@ -210,26 +253,34 @@ export default function NotificationsPage() {
                     key={notification.id}
                     className={[
                       "rounded-lg border p-4 transition-colors",
-                      notification.read ? "border-gray-200 bg-white" : "border-emerald-200 bg-emerald-50",
+                      notification.read
+                        ? "border-gray-200 bg-white"
+                        : "border-emerald-200 bg-emerald-50",
                     ].join(" ")}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-gray-900">{notification.title}</h3>
+                          <h3 className="font-medium text-gray-900">
+                            {notification.title}
+                          </h3>
                           {!notification.read && (
                             <span className="inline-flex items-center rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold text-white">
                               New
                             </span>
                           )}
                         </div>
-                        <p className="mt-1 text-sm text-gray-600">{notification.message}</p>
+                        <p className="mt-1 text-sm text-gray-600">
+                          {notification.message}
+                        </p>
                         <p className="mt-1 text-xs text-gray-500">
                           {formatDateTime(notification.createdAt)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <StatusBadge status={notification.read ? "COMPLETED" : "PENDING"} />
+                        <StatusBadge
+                          status={notification.read ? "COMPLETED" : "PENDING"}
+                        />
                         {!notification.read && (
                           <button
                             type="button"

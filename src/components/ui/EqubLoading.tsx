@@ -15,17 +15,10 @@ export function EqubLoading({
       )}
     >
       <div className="flex flex-col items-center gap-3">
-        <div className="relative overflow-hidden">
-          <span className="relative z-10 text-3xl font-semibold tracking-tight text-emerald-600 sm:text-4xl">
-            Equb
-          </span>
-          <span className="pointer-events-none absolute inset-0 overflow-hidden">
-            <span className="absolute inset-y-0 left-[-60%] w-1/2 animate-[equb-wave_1.6s_linear_infinite] rounded-full bg-gradient-to-r from-transparent via-gray-300/90 to-transparent" />
-          </span>
-        </div>
-        {subtitle ? (
-          <p className="text-sm text-gray-500">{subtitle}</p>
-        ) : null}
+        <span className="animate-[equb-text-wave_3.2s_linear_infinite] bg-size-[220%_100%] bg-linear-to-r from-emerald-600 via-gray-400 to-emerald-600 bg-clip-text text-4xl font-semibold tracking-tight text-transparent sm:text-5xl">
+          Equb
+        </span>
+        {subtitle ? <p className="text-sm text-gray-500">{subtitle}</p> : null}
       </div>
     </div>
   );

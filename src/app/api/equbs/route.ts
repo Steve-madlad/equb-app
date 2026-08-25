@@ -1,5 +1,5 @@
 import { toMinorUnits } from "@/lib/domain/money";
-import { requireAdmin, requireAuth } from "@/lib/firebase/auth";
+import { getUserProfile, requireAdmin, requireAuth } from "@/lib/firebase/auth";
 import {
   createEqub,
   getMembershipsForEqub,
@@ -45,11 +45,14 @@ export async function GET(request: NextRequest) {
         const pendingMemberCount = memberships.filter(
           (membership) => membership.status === "PENDING",
         ).length;
+        const creator = await getUserProfile(equb.createdBy);
 
         return {
           ...equb,
           activeMemberCount,
           pendingMemberCount,
+          createdByName:
+            creator?.displayName ?? creator?.email ?? equb.createdBy,
         };
       }),
     );

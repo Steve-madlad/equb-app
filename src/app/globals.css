@@ -121,12 +121,15 @@ body {
   @apply bg-gray-50 text-gray-900 antialiased;
 }
 
-@keyframes equb-wave {
+@keyframes equb-text-wave {
   0% {
-    transform: translateX(-120%) skewX(-18deg);
+    background-position: 100% 50%;
+  }
+  50% {
+    background-position: -100% 50%;
   }
   100% {
-    transform: translateX(220%) skewX(-18deg);
+    background-position: 100% 50%;
   }
 }
 

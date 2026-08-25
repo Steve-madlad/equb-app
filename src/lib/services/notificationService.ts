@@ -1,6 +1,6 @@
-import { v4 as uuidv4 } from "uuid";
-import { COLLECTIONS, getAdminDb } from "@/lib/firebase/admin";
 import type { Notification, NotificationType } from "@/lib/domain/types";
+import { COLLECTIONS, getAdminDb } from "@/lib/firebase/admin";
+import { v4 as uuidv4 } from "uuid";
 
 export async function createNotification(params: {
   id?: string;
@@ -19,11 +19,16 @@ export async function createNotification(params: {
     createdAt: new Date().toISOString(),
   };
 
-  await db.collection(COLLECTIONS.notifications).doc(notification.id).set(notification);
+  await db
+    .collection(COLLECTIONS.notifications)
+    .doc(notification.id)
+    .set(notification);
   return notification;
 }
 
-export async function getNotificationsForUser(userId: string): Promise<Notification[]> {
+export async function getNotificationsForUser(
+  userId: string,
+): Promise<Notification[]> {
   const db = getAdminDb();
   const snapshot = await db
     .collection(COLLECTIONS.notifications)
@@ -35,7 +40,9 @@ export async function getNotificationsForUser(userId: string): Promise<Notificat
   return snapshot.docs.map((doc) => doc.data() as Notification);
 }
 
-export async function getUnreadNotificationCount(userId: string): Promise<number> {
+export async function getUnreadNotificationCount(
+  userId: string,
+): Promise<number> {
   const db = getAdminDb();
   const snapshot = await db
     .collection(COLLECTIONS.notifications)
@@ -46,7 +53,25 @@ export async function getUnreadNotificationCount(userId: string): Promise<number
   return snapshot.size;
 }
 
-export async function markNotificationRead(notificationId: string): Promise<void> {
+export async function markNotificationRead(
+  notificationId: string,
+): Promise<void> {
   const db = getAdminDb();
-  await db.collection(COLLECTIONS.notifications).doc(notificationId).update({ read: true });
+  await db
+    .collection(COLLECTIONS.notifications)
+    .doc(notificationId)
+    .update({ read: true });
+}
+
+export async function markAllNotificationsRead(userId: string): Promise<void> {
+  const db = getAdminDb();
+  const snapshot = await db
+    .collection(COLLECTIONS.notifications)
+    .where("userId", "==", userId)
+    .where("read", "==", false)
+    .get();
+
+  const batch = db.batch();
+  snapshot.docs.forEach((doc) => batch.update(doc.ref, { read: true }));
+  await batch.commit();
 }

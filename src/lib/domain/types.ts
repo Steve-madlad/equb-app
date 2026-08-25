@@ -72,6 +72,11 @@ export interface Membership {
   hasReceivedPayout: boolean;
   payoutReceivedAt?: string;
   payoutCycleId?: string;
+  payoutEligibilityException?: {
+    grantedBy: string;
+    grantedAt: string;
+    reason: string;
+  };
 }
 
 // ─── Cycles ──────────────────────────────────────────────────────────────────
@@ -205,6 +210,7 @@ export type AuditAction =
   | "EQUB_OPENED"
   | "MEMBER_JOINED"
   | "MEMBER_APPROVED"
+  | "PAYOUT_ELIGIBILITY_EXCEPTION_GRANTED"
   | "MEMBER_REJECTED"
   | "MEMBER_WITHDRAWN"
   | "EQUB_LOCKED"

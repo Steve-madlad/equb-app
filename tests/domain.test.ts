@@ -2,7 +2,10 @@ import {
   generateCycleDates,
   validateEqubConfig,
 } from "@/lib/domain/cycleUtils";
-import { isEligibleForPayout } from "@/lib/domain/eligibility";
+import {
+  getEligibleMembers,
+  isEligibleForPayout,
+} from "@/lib/domain/eligibility";
 import {
   canJoinEqub,
   canLeaveEqub,
@@ -14,6 +17,10 @@ import {
   formatMoney,
   toMinorUnits,
 } from "@/lib/domain/money";
+import {
+  isObligationOverdue,
+  PAYMENT_GRACE_PERIOD_HOURS,
+} from "@/lib/domain/paymentTiming";
 import type { ContributionObligation, Membership } from "@/lib/domain/types";
 import { RandomSelectionStrategy } from "@/lib/payout/RandomSelectionStrategy";
 import { describe, expect, it } from "vitest";
@@ -130,6 +137,138 @@ describe("payout eligibility", () => {
         obligationsForCycle: [obligation],
         allObligations: [obligation],
       }),
+    ).toBe(true);
+  });
+
+  function obligation(
+    id: string,
+    cycleId: string,
+    status: ContributionObligation["status"],
+  ): ContributionObligation {
+    return {
+      id,
+      equbId: "e1",
+      cycleId,
+      membershipId: "m1",
+      userId: "u1",
+      amountMinor: 100000,
+      penaltyMinor: 0,
+      totalDueMinor: 100000,
+      status,
+      dueDate: cycleId === "c1" ? "2026-09-01" : "2026-10-01",
+    };
+  }
+
+  it("keeps a member eligible after a late obligation is settled", () => {
+    const settled = obligation("o1", "c1", "PAID");
+    expect(
+      isEligibleForPayout({
+        membership: baseMembership,
+        obligationsForCycle: [settled],
+        allObligations: [settled],
+      }),
+    ).toBe(true);
+  });
+
+  it("does not let a newer payment erase an older unresolved overdue obligation", () => {
+    const cycleOne = obligation("o1", "c1", "OVERDUE");
+    const cycleTwo = obligation("o2", "c2", "PAID");
+    expect(
+      isEligibleForPayout({
+        membership: baseMembership,
+        obligationsForCycle: [cycleTwo],
+        allObligations: [cycleOne, cycleTwo],
+      }),
+    ).toBe(false);
+  });
+
+  it("allows a future payout after all overdue obligations are settled", () => {
+    const cycleOne = obligation("o1", "c1", "PAID");
+    const cycleTwo = obligation("o2", "c2", "PAID");
+    expect(
+      isEligibleForPayout({
+        membership: baseMembership,
+        obligationsForCycle: [cycleTwo],
+        allObligations: [cycleOne, cycleTwo],
+      }),
+    ).toBe(true);
+  });
+
+  it("allows an explicit admin exception without changing payment status", () => {
+    const unpaid = obligation("o1", "c1", "OVERDUE");
+    const membership = {
+      ...baseMembership,
+      payoutEligibilityException: {
+        grantedBy: "admin-1",
+        grantedAt: "2026-09-03T00:00:00.000Z",
+        reason: "Approved hardship exception",
+      },
+    };
+    expect(
+      isEligibleForPayout({
+        membership,
+        obligationsForCycle: [unpaid],
+        allObligations: [unpaid],
+      }),
+    ).toBe(true);
+    expect(unpaid.status).toBe("OVERDUE");
+  });
+
+  it("keeps a previous payout intact while blocking future eligibility", () => {
+    const overdue = obligation("o1", "c1", "OVERDUE");
+    expect(
+      isEligibleForPayout({
+        membership: { ...baseMembership, hasReceivedPayout: true },
+        obligationsForCycle: [overdue],
+        allObligations: [overdue],
+      }),
+    ).toBe(false);
+  });
+
+  it("keeps compliant members eligible when another member has not paid", () => {
+    const unpaid = obligation("o1", "c1", "PENDING");
+    const compliant = { ...baseMembership, id: "m2", userId: "u2" };
+    const paid = {
+      ...unpaid,
+      id: "o2",
+      membershipId: "m2",
+      userId: "u2",
+      status: "PAID" as const,
+    };
+    expect(
+      getEligibleMembers(
+        [baseMembership, compliant],
+        [unpaid, paid],
+        [unpaid, paid],
+      ),
+    ).toEqual([compliant]);
+  });
+});
+
+describe("payment grace period", () => {
+  const lateObligation = {
+    id: "o1",
+    equbId: "e1",
+    cycleId: "c1",
+    membershipId: "m1",
+    userId: "u1",
+    amountMinor: 100000,
+    penaltyMinor: 0,
+    totalDueMinor: 100000,
+    status: "PENDING" as const,
+    dueDate: "2026-09-01",
+  };
+
+  it("uses a 48-hour grace period", () => {
+    expect(PAYMENT_GRACE_PERIOD_HOURS).toBe(48);
+    expect(
+      isObligationOverdue(lateObligation, "2026-09-02T23:59:59.000Z"),
+    ).toBe(false);
+    expect(
+      isObligationOverdue(lateObligation, "2026-09-03T00:00:00.000Z"),
+    ).toBe(false);
+    expect(
+      isObligationOverdue(lateObligation, "2026-09-03T00:00:01.000Z"),
     ).toBe(true);
   });
 });

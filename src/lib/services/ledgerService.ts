@@ -1,7 +1,7 @@
-import { v4 as uuidv4 } from "uuid";
-import { COLLECTIONS, getAdminDb } from "@/lib/firebase/admin";
-import type { LedgerEntry, LedgerEntryType } from "@/lib/domain/types";
 import type { Currency, MoneyMinor } from "@/lib/domain/money";
+import type { LedgerEntry, LedgerEntryType } from "@/lib/domain/types";
+import { COLLECTIONS, getAdminDb } from "@/lib/firebase/admin";
+import { v4 as uuidv4 } from "uuid";
 
 export async function createLedgerEntry(params: {
   equbId: string;
@@ -38,7 +38,10 @@ export async function getLedgerForEqub(equbId: string): Promise<LedgerEntry[]> {
   return snapshot.docs.map((doc) => doc.data() as LedgerEntry);
 }
 
-export async function getLedgerForUser(userId: string, equbId: string): Promise<LedgerEntry[]> {
+export async function getLedgerForUser(
+  userId: string,
+  equbId: string,
+): Promise<LedgerEntry[]> {
   const db = getAdminDb();
   const snapshot = await db
     .collection(COLLECTIONS.ledger)
@@ -50,7 +53,40 @@ export async function getLedgerForUser(userId: string, equbId: string): Promise<
   return snapshot.docs.map((doc) => doc.data() as LedgerEntry);
 }
 
-export async function getCurrentPoolForEqub(equbId: string): Promise<MoneyMinor> {
+export async function getLedgerEntriesForUser(
+  userId: string,
+): Promise<LedgerEntry[]> {
+  const db = getAdminDb();
+  const snapshot = await db
+    .collection(COLLECTIONS.ledger)
+    .where("userId", "==", userId)
+    .get();
+
+  return snapshot.docs
+    .map((doc) => doc.data() as LedgerEntry)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function getSettledContributionTotalForCycle(
+  cycleId: string,
+): Promise<MoneyMinor> {
+  const db = getAdminDb();
+  const snapshot = await db
+    .collection(COLLECTIONS.ledger)
+    .where("cycleId", "==", cycleId)
+    .get();
+
+  return snapshot.docs.reduce<MoneyMinor>((total, doc) => {
+    const entry = doc.data() as LedgerEntry;
+    return entry.type === "CONTRIBUTION_RECEIVED"
+      ? total + entry.amountMinor
+      : total;
+  }, 0 as MoneyMinor);
+}
+
+export async function getCurrentPoolForEqub(
+  equbId: string,
+): Promise<MoneyMinor> {
   const entries = await getLedgerForEqub(equbId);
 
   return entries.reduce<MoneyMinor>((balance, entry) => {

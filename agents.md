@@ -54,6 +54,18 @@ Most business logic lives in `src/lib`, while route handlers in `src/app/api` ex
 - Draws use a selection strategy from `src/lib/payout/RandomSelectionStrategy.ts`.
 - Every major action creates audit logs, and many actions create notifications and ledger entries.
 - The Equb detail page's `Current pool` value is derived from ledger entries, not a frontend calculation.
+- Chapa is available through `src/lib/payments/ChapaPaymentProvider.ts` and is selected with `PAYMENT_PROVIDER=chapa`.
+- Chapa Inline JS is rendered in the contribution sheet with CBE Birr, BOA Card, Telebirr, and M-Pesa enabled.
+- Chapa callbacks and webhooks must be verified server-side; never trust browser amount or success values.
+- Verified Chapa amounts must match the stored obligation before `verifyAndRecordPayment()` records the ledger entry.
+
+### Automation and scheduling
+
+- Automated cycle advancement and payouts are not implemented yet; admin-triggered draws remain the current behavior.
+- The preferred free scheduler is Upstash QStash: one signed recurring request to a protected Next.js maintenance route.
+- QStash is only a delivery mechanism. Firestore transactions and service-layer rules remain responsible for eligibility, payout selection, audit logs, and idempotency.
+- QStash secrets are server-only: `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, and `QSTASH_NEXT_SIGNING_KEY`.
+- Cloudflare Cron Triggers are the main alternative; GitHub Actions and Vercel Hobby scheduling are not preferred for financial jobs because of documented timing or availability limitations.
 
 ## Data Model
 
@@ -77,6 +89,8 @@ Key domain types live in `src/lib/domain/types.ts`.
   - Firebase client setup, admin setup, and auth helpers.
 - `src/lib/services/`
   - Application services for Equbs, payments, payouts, audit, ledger, and notifications.
+- `src/types/chapa-inline.d.ts`
+  - Local TypeScript declaration for the Chapa Inline JS package, which does not publish declarations.
 - `tests/`
   - Vitest unit tests for domain logic.
 

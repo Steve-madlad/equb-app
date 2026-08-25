@@ -2,7 +2,6 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/Input";
 import {
   getBrowserTestDate,
   getTodayIsoDate,
@@ -33,6 +33,7 @@ import {
   LayoutDashboard,
   LogOut,
   Search,
+  WalletCards,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -193,6 +194,17 @@ export function Navbar({
               >
                 <FileClock className="h-4 w-4" />
                 Audit logs
+              </Link>
+            )}
+            {authenticated && !isAdmin && (
+              <Link
+                href="/financial-activities"
+                className="flex-center gap-2 py-1 px-2 rounded-lg text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                aria-label="Financial activities"
+                title="Financial activities"
+              >
+                <WalletCards className="h-4 w-4" />
+                Financial activities
               </Link>
             )}
           </div>

@@ -1,3 +1,5 @@
+import type { PaymentRecord, PaymentStatus } from "@/lib/domain/types";
+import { COLLECTIONS, getAdminDb } from "@/lib/firebase/admin";
 import { randomBytes } from "crypto";
 import type {
   CreatePaymentInput,
@@ -6,7 +8,6 @@ import type {
   PaymentStatusResult,
   WebhookPayload,
 } from "./PaymentProvider";
-import type { PaymentStatus } from "@/lib/domain/types";
 
 interface MockPaymentState {
   providerTransactionId: string;
@@ -21,7 +22,7 @@ interface MockPaymentState {
   failureReason?: string;
 }
 
-/** In-memory store for mock payments. Replace with Firestore-backed store for production mock. */
+/** Local cache backed by Firestore so separate route runtimes share state. */
 const mockPaymentStore = new Map<string, MockPaymentState>();
 
 let mockCounter = 0;
@@ -37,7 +38,7 @@ export class MockPaymentProvider implements PaymentProvider {
 
   async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
     const existing = [...mockPaymentStore.values()].find(
-      (p) => p.idempotencyKey === input.idempotencyKey
+      (p) => p.idempotencyKey === input.idempotencyKey,
     );
     if (existing) {
       return {
@@ -60,6 +61,7 @@ export class MockPaymentProvider implements PaymentProvider {
       createdAt: new Date().toISOString(),
     };
     mockPaymentStore.set(providerTransactionId, state);
+    await this.saveState(state);
 
     return {
       providerTransactionId,
@@ -68,19 +70,26 @@ export class MockPaymentProvider implements PaymentProvider {
     };
   }
 
-  async getPaymentStatus(providerTransactionId: string): Promise<PaymentStatusResult> {
-    const state = mockPaymentStore.get(providerTransactionId);
-    if (!state) throw new Error(`Mock payment not found: ${providerTransactionId}`);
+  async getPaymentStatus(
+    providerTransactionId: string,
+  ): Promise<PaymentStatusResult> {
+    const state = await this.getState(providerTransactionId);
+    if (!state)
+      throw new Error(`Mock payment not found: ${providerTransactionId}`);
     return this.toStatusResult(state);
   }
 
-  async verifyPayment(providerTransactionId: string): Promise<PaymentStatusResult> {
-    const state = mockPaymentStore.get(providerTransactionId);
-    if (!state) throw new Error(`Mock payment not found: ${providerTransactionId}`);
+  async verifyPayment(
+    providerTransactionId: string,
+  ): Promise<PaymentStatusResult> {
+    const state = await this.getState(providerTransactionId);
+    if (!state)
+      throw new Error(`Mock payment not found: ${providerTransactionId}`);
 
     if (state.status === "INITIATED" || state.status === "PENDING") {
       state.status = "SUCCESS";
       mockPaymentStore.set(providerTransactionId, state);
+      await this.saveState(state);
     }
 
     return this.toStatusResult(state);
@@ -88,17 +97,21 @@ export class MockPaymentProvider implements PaymentProvider {
 
   async handleWebhook(
     payload: unknown,
-    _headers: Record<string, string>
+    _headers: Record<string, string>,
   ): Promise<WebhookPayload | null> {
-    const data = payload as { providerTransactionId?: string; status?: PaymentStatus };
+    const data = payload as {
+      providerTransactionId?: string;
+      status?: PaymentStatus;
+    };
     if (!data.providerTransactionId) return null;
 
-    const state = mockPaymentStore.get(data.providerTransactionId);
+    const state = await this.getState(data.providerTransactionId);
     if (!state) return null;
 
     if (data.status) {
       state.status = data.status;
       mockPaymentStore.set(data.providerTransactionId, state);
+      await this.saveState(state);
     }
 
     return {
@@ -110,36 +123,90 @@ export class MockPaymentProvider implements PaymentProvider {
   }
 
   async refundPayment(providerTransactionId: string): Promise<void> {
-    const state = mockPaymentStore.get(providerTransactionId);
-    if (!state) throw new Error(`Mock payment not found: ${providerTransactionId}`);
+    const state = await this.getState(providerTransactionId);
+    if (!state)
+      throw new Error(`Mock payment not found: ${providerTransactionId}`);
     state.status = "CANCELLED";
     mockPaymentStore.set(providerTransactionId, state);
+    await this.saveState(state);
   }
 
   /** Mock-specific: simulate user confirming payment in UI */
   async simulatePayment(
     providerTransactionId: string,
-    outcome: "SUCCESS" | "FAILED" | "CANCELLED"
+    outcome: "SUCCESS" | "FAILED" | "CANCELLED",
   ): Promise<PaymentStatusResult> {
-    const state = mockPaymentStore.get(providerTransactionId);
-    if (!state) throw new Error(`Mock payment not found: ${providerTransactionId}`);
+    const state = await this.getState(providerTransactionId);
+    if (!state)
+      throw new Error(`Mock payment not found: ${providerTransactionId}`);
 
     state.status = outcome;
     if (outcome === "FAILED") state.failureReason = "Simulated payment failure";
     mockPaymentStore.set(providerTransactionId, state);
+    await this.saveState(state);
 
     return this.toStatusResult(state);
   }
 
-  getPaymentForRedirect(providerTransactionId: string): MockPaymentState | undefined {
+  getPaymentForRedirect(
+    providerTransactionId: string,
+  ): MockPaymentState | undefined {
     return mockPaymentStore.get(providerTransactionId);
+  }
+
+  private async getState(
+    providerTransactionId: string,
+  ): Promise<MockPaymentState | undefined> {
+    const cached = mockPaymentStore.get(providerTransactionId);
+    if (cached) return cached;
+
+    const doc = await getAdminDb()
+      .collection(COLLECTIONS.mockPayments)
+      .doc(`mock-${providerTransactionId}`)
+      .get();
+    if (doc.exists) {
+      const state = doc.data() as MockPaymentState;
+      mockPaymentStore.set(providerTransactionId, state);
+      return state;
+    }
+
+    const paymentSnapshot = await getAdminDb()
+      .collection(COLLECTIONS.payments)
+      .where("providerTransactionId", "==", providerTransactionId)
+      .limit(1)
+      .get();
+    if (paymentSnapshot.empty) return undefined;
+
+    const payment = paymentSnapshot.docs[0].data() as PaymentRecord;
+    const state: MockPaymentState = {
+      providerTransactionId: payment.providerTransactionId,
+      amountMinor: payment.amountMinor,
+      currency: payment.currency,
+      userId: payment.userId,
+      obligationId: payment.obligationId,
+      equbId: payment.equbId,
+      status: payment.status,
+      idempotencyKey: payment.idempotencyKey,
+      createdAt: payment.initiatedAt,
+    };
+    mockPaymentStore.set(providerTransactionId, state);
+    await this.saveState(state);
+    return state;
+  }
+
+  private async saveState(state: MockPaymentState): Promise<void> {
+    await getAdminDb()
+      .collection(COLLECTIONS.mockPayments)
+      .doc(`mock-${state.providerTransactionId}`)
+      .set(state);
   }
 
   private toStatusResult(state: MockPaymentState): PaymentStatusResult {
     return {
       providerTransactionId: state.providerTransactionId,
       status: state.status,
-      verifiedAmountMinor: state.status === "SUCCESS" ? state.amountMinor : undefined,
+      verifiedAmountMinor:
+        state.status === "SUCCESS" ? state.amountMinor : undefined,
       failureReason: state.failureReason,
     };
   }

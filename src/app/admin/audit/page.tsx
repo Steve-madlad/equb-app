@@ -1,13 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { onIdTokenChanged, signOut } from "firebase/auth";
-import Link from "next/link";
-import { getFirebaseAuth } from "@/lib/firebase/client";
 import { Navbar } from "@/components/layout/Navbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/Button";
-import { EqubLoading } from "@/components/ui/EqubLoading";
 import { Card } from "@/components/ui/Card";
 import {
   Empty,
@@ -17,6 +12,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { EqubLoading } from "@/components/ui/EqubLoading";
 import { Input } from "@/components/ui/Input";
 import {
   Select,
@@ -33,7 +29,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getFirebaseAuth } from "@/lib/firebase/client";
 import { formatDateTime } from "@/lib/utils";
+import { onIdTokenChanged, signOut } from "firebase/auth";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
 type AuditLogView = {
   id: string;
@@ -130,7 +130,8 @@ export default function AdminAuditPage() {
     const search = query.trim().toLowerCase();
     return logs.filter((log) => {
       const matchesEqub = equbFilter === "ALL" || log.equbId === equbFilter;
-      const matchesAction = actionFilter === "ALL" || log.action === actionFilter;
+      const matchesAction =
+        actionFilter === "ALL" || log.action === actionFilter;
       const matchesSearch =
         !search ||
         log.action.toLowerCase().includes(search) ||
@@ -138,7 +139,9 @@ export default function AdminAuditPage() {
         log.actorName.toLowerCase().includes(search) ||
         log.actorId.toLowerCase().includes(search) ||
         (log.reason ?? "").toLowerCase().includes(search) ||
-        JSON.stringify(log.metadata ?? {}).toLowerCase().includes(search);
+        JSON.stringify(log.metadata ?? {})
+          .toLowerCase()
+          .includes(search);
       return matchesEqub && matchesAction && matchesSearch;
     });
   }, [actionFilter, equbFilter, logs, query]);
@@ -157,9 +160,13 @@ export default function AdminAuditPage() {
 
   const pageCount = Math.max(1, Math.ceil(filteredLogs.length / pageSize));
   const currentPage = Math.min(page, pageCount);
-  const pageStart = filteredLogs.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const pageStart =
+    filteredLogs.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const pageEnd = Math.min(currentPage * pageSize, filteredLogs.length);
-  const visibleLogs = filteredLogs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const visibleLogs = filteredLogs.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
 
   useEffect(() => {
     if (page !== currentPage) {
@@ -178,7 +185,9 @@ export default function AdminAuditPage() {
         userName={userName}
         isAdmin
         searchHref="/equbs"
-        onSignOut={() => signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))}
+        onSignOut={() =>
+          signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))
+        }
       />
 
       <main className="mx-auto max-w-7xl px-4 py-8">
@@ -186,7 +195,8 @@ export default function AdminAuditPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Audit Logs</h1>
             <p className="mt-1 text-sm text-gray-600">
-              Review the server-side record of Equb actions for the Equbs you manage.
+              Review the server-side record of Equb actions for the Equbs you
+              manage.
             </p>
           </div>
         </div>
@@ -227,7 +237,9 @@ export default function AdminAuditPage() {
               <SelectContent>
                 {ACTION_OPTIONS.map((action) => (
                   <SelectItem key={action} value={action}>
-                    {action === "ALL" ? "All actions" : action.replace(/_/g, " ")}
+                    {action === "ALL"
+                      ? "All actions"
+                      : action.replace(/_/g, " ")}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -251,7 +263,8 @@ export default function AdminAuditPage() {
         <Card className="mt-6">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 py-4">
             <p className="text-sm text-gray-600">
-              {filteredLogs.length} log{filteredLogs.length === 1 ? "" : "s"} shown
+              {filteredLogs.length} log{filteredLogs.length === 1 ? "" : "s"}{" "}
+              shown
             </p>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Rows per page</span>
@@ -324,7 +337,9 @@ export default function AdminAuditPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="px-4 py-3">
-                      <div className="text-sm text-gray-900">{log.actorName}</div>
+                      <div className="text-sm text-gray-900">
+                        {log.actorName}
+                      </div>
                       <div className="text-xs text-gray-500">
                         {log.actorEmail || log.actorId}
                       </div>
@@ -333,13 +348,16 @@ export default function AdminAuditPage() {
                       <div className="space-y-1">
                         {log.reason && <div>{log.reason}</div>}
                         {log.entityId && (
-                          <div className="text-xs text-gray-500">Entity: {log.entityId}</div>
+                          <div className="text-xs text-gray-500">
+                            Entity: {log.entityId}
+                          </div>
                         )}
-                        {log.metadata && Object.keys(log.metadata).length > 0 && (
-                          <pre className="whitespace-pre-wrap break-words rounded bg-gray-50 p-2 text-xs text-gray-600">
-                            {JSON.stringify(log.metadata, null, 2)}
-                          </pre>
-                        )}
+                        {log.metadata &&
+                          Object.keys(log.metadata).length > 0 && (
+                            <pre className="whitespace-pre-wrap wrap-break-word rounded bg-gray-50 p-2 text-xs text-gray-600">
+                              {JSON.stringify(log.metadata, null, 2)}
+                            </pre>
+                          )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -348,7 +366,7 @@ export default function AdminAuditPage() {
             </TableBody>
           </Table>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 px-4 py-4">
             <p className="text-sm text-gray-600">
               {filteredLogs.length === 0
                 ? "Showing 0 of 0"
@@ -372,7 +390,9 @@ export default function AdminAuditPage() {
                 variant="outline"
                 size="sm"
                 disabled={currentPage === pageCount}
-                onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
+                onClick={() =>
+                  setPage((current) => Math.min(pageCount, current + 1))
+                }
               >
                 Next
               </Button>

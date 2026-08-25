@@ -11,22 +11,23 @@ import {
   getCyclesForEqub,
   getEqub,
   getMembershipsForEqub,
+  grantPayoutEligibilityException,
   lockEqub,
   openEqubForMembers,
   rejectMembership,
-  withdrawMembership,
   updateEqub,
+  withdrawMembership,
 } from "@/lib/services/equbService";
+import { getCurrentPoolForEqub } from "@/lib/services/ledgerService";
 import {
   getObligationsForCycle,
   getObligationsForUser,
+  notifyAdminsOfDuePayoutCycles,
 } from "@/lib/services/paymentService";
-import { notifyAdminsOfDuePayoutCycles } from "@/lib/services/paymentService";
 import {
   getDrawForCycle,
   getPayoutsForEqub,
 } from "@/lib/services/payoutService";
-import { getCurrentPoolForEqub } from "@/lib/services/ledgerService";
 import { resolveRequestDate } from "@/lib/testClock";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -109,6 +110,14 @@ export async function GET(
     }
 
     if (user.role === "ADMIN") {
+      const currentCycleForMembers = cycles.find((cycle) =>
+        ["ACTIVE", "DRAW_PENDING", "WAITING_FOR_ELIGIBILITY", "DRAWN"].includes(
+          cycle.status,
+        ),
+      );
+      const currentCycleObligations = currentCycleForMembers
+        ? await getObligationsForCycle(currentCycleForMembers.id)
+        : [];
       const pendingMemberships = memberships.filter(
         (m) => m.status === "PENDING",
       );
@@ -135,6 +144,10 @@ export async function GET(
               email: profile?.email ?? "",
               rating: profile?.rating ?? 100,
             },
+            contributionStatus:
+              currentCycleObligations.find(
+                (obligation) => obligation.membershipId === membership.id,
+              )?.status ?? "NOT_STARTED",
           };
         }),
       );
@@ -250,6 +263,28 @@ export async function PATCH(
         }
         const result = await approveMemberships(membershipIds, admin.id);
         return NextResponse.json({ result });
+      }
+      case "grant_payout_exception": {
+        if (!membershipId) {
+          return NextResponse.json(
+            { error: "membershipId required" },
+            { status: 400 },
+          );
+        }
+        const reason =
+          typeof body.reason === "string" ? body.reason.trim() : "";
+        if (!reason) {
+          return NextResponse.json(
+            { error: "reason required" },
+            { status: 400 },
+          );
+        }
+        const exceptionMembership = await grantPayoutEligibilityException(
+          membershipId,
+          admin.id,
+          reason,
+        );
+        return NextResponse.json({ membership: exceptionMembership });
       }
       default:
         return NextResponse.json({ error: "Unknown action" }, { status: 400 });

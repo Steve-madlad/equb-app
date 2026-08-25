@@ -1,11 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { onIdTokenChanged, signOut } from "firebase/auth";
-import { getFirebaseAuth } from "@/lib/firebase/client";
+import { CreateEqubDialog } from "@/components/equbs/CreateEqubDialog";
 import { Navbar } from "@/components/layout/Navbar";
-import { EqubLoading } from "@/components/ui/EqubLoading";
 import {
   Card,
   CardContent,
@@ -14,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/Card";
+import { EqubLoading } from "@/components/ui/EqubLoading";
 import { Input } from "@/components/ui/Input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
@@ -24,17 +21,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { formatDate, formatDateTime } from "@/lib/utils";
 import { formatMoney } from "@/lib/domain/money";
 import type { Equb, UserProfile } from "@/lib/domain/types";
+import { getFirebaseAuth } from "@/lib/firebase/client";
+import { formatDate, formatDateTime } from "@/lib/utils";
+import { onIdTokenChanged, signOut } from "firebase/auth";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
 type EqubSummary = Equb & {
   activeMemberCount?: number;
   pendingMemberCount?: number;
+  createdByName?: string;
 };
 
-const USER_STATUS_OPTIONS = [
+const STATUS_OPTIONS = [
   "ALL",
+  "DRAFT",
   "OPEN_FOR_MEMBERS",
   "LOCKED",
   "ACTIVE",
@@ -55,15 +58,21 @@ const SORT_OPTIONS = [
 
 export default function SearchPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [token, setToken] = useState("");
   const [equbs, setEqubs] = useState<EqubSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<(typeof USER_STATUS_OPTIONS)[number]>("ALL");
-  const [frequencyFilter, setFrequencyFilter] = useState<(typeof FREQUENCY_OPTIONS)[number]>("ALL");
+  const [statusFilter, setStatusFilter] =
+    useState<(typeof STATUS_OPTIONS)[number]>("ALL");
+  const [frequencyFilter, setFrequencyFilter] =
+    useState<(typeof FREQUENCY_OPTIONS)[number]>("ALL");
   const [sortBy, setSortBy] = useState<(typeof SORT_OPTIONS)[number]>("NEWEST");
-  const [contributionRange, setContributionRange] = useState<[number, number]>([0, 0]);
+  const [contributionRange, setContributionRange] = useState<[number, number]>([
+    0, 0,
+  ]);
   const [startDateFrom, setStartDateFrom] = useState("");
   const [startDateTo, setStartDateTo] = useState("");
+  const [creatorFilter, setCreatorFilter] = useState("ALL");
 
   useEffect(() => {
     const unsub = onIdTokenChanged(getFirebaseAuth(), async (user) => {
@@ -73,16 +82,15 @@ export default function SearchPage() {
       }
 
       const token = await user.getIdToken();
+      setToken(token);
       const profileRes = await fetch("/api/users/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
+      let admin = false;
       if (profileRes.ok) {
         const { profile: p } = await profileRes.json();
         setProfile(p);
-        if (p.role === "ADMIN") {
-          window.location.href = "/equbs";
-          return;
-        }
+        admin = p.role === "ADMIN";
       }
 
       const res = await fetch("/api/equbs", {
@@ -90,7 +98,9 @@ export default function SearchPage() {
       });
       if (res.ok) {
         const { equbs: e } = await res.json();
-        setEqubs(e.filter((equb: EqubSummary) => equb.status !== "DRAFT"));
+        setEqubs(
+          e.filter((equb: EqubSummary) => admin || equb.status !== "DRAFT"),
+        );
       }
       setLoading(false);
     });
@@ -101,7 +111,9 @@ export default function SearchPage() {
   const contributionBounds = useMemo(() => {
     if (equbs.length === 0) return [0, 0] as const;
 
-    const values = equbs.map((equb) => Math.round(equb.contributionAmountMinor / 100));
+    const values = equbs.map((equb) =>
+      Math.round(equb.contributionAmountMinor / 100),
+    );
     return [Math.min(...values), Math.max(...values)] as const;
   }, [equbs]);
 
@@ -122,7 +134,8 @@ export default function SearchPage() {
       (startDateTo === "" || equb.startDate <= startDateTo);
 
     const filtered = equbs.filter((equb) => {
-      const matchesStatus = statusFilter === "ALL" || equb.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "ALL" || equb.status === statusFilter;
       const matchesFrequency =
         frequencyFilter === "ALL" || equb.frequency === frequencyFilter;
       const matchesSearch =
@@ -130,7 +143,15 @@ export default function SearchPage() {
         equb.name.toLowerCase().includes(search) ||
         (equb.description ?? "").toLowerCase().includes(search) ||
         equb.id.toLowerCase().includes(search);
-      return matchesStatus && matchesFrequency && matchesSearch && matchesRange(equb);
+      const matchesCreator =
+        creatorFilter === "ALL" || equb.createdBy === creatorFilter;
+      return (
+        matchesStatus &&
+        matchesFrequency &&
+        matchesSearch &&
+        matchesCreator &&
+        matchesRange(equb)
+      );
     });
 
     return filtered.sort((a, b) => {
@@ -151,6 +172,7 @@ export default function SearchPage() {
   }, [
     equbs,
     contributionRange,
+    creatorFilter,
     frequencyFilter,
     query,
     sortBy,
@@ -170,24 +192,39 @@ export default function SearchPage() {
         userName={profile?.displayName}
         isAdmin={profile?.role === "ADMIN"}
         searchHref="/search"
-        onSignOut={() => signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))}
+        onSignOut={() =>
+          signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))
+        }
       />
 
       <main className="mx-auto max-w-7xl px-4 py-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Search Equbs</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {profile?.role === "ADMIN" ? "Admin Equbs" : "Search Equbs"}
+            </h1>
             <p className="mt-1 text-sm text-gray-600">
-              Browse only non-draft Equbs with filters for status and keywords.
+              {profile?.role === "ADMIN"
+                ? "Search and manage every Equb, including drafts."
+                : "Browse only non-draft Equbs with filters for status and keywords."}
             </p>
           </div>
+          {profile?.role === "ADMIN" && (
+            <CreateEqubDialog
+              token={token}
+              onCreated={(equbId) => {
+                window.location.href = `/equbs/${equbId}`;
+              }}
+            />
+          )}
         </div>
 
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>Filters</CardTitle>
             <CardDescription>
-              Narrow the list by status, schedule, contribution size, and start date.
+              Narrow the list by status, schedule, contribution size, and start
+              date.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -203,25 +240,58 @@ export default function SearchPage() {
               <Select
                 value={statusFilter}
                 onValueChange={(value) =>
-                  setStatusFilter(value as (typeof USER_STATUS_OPTIONS)[number])
+                  setStatusFilter(value as (typeof STATUS_OPTIONS)[number])
                 }
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  {USER_STATUS_OPTIONS.map((status) => (
+                  {STATUS_OPTIONS.filter(
+                    (status) => profile?.role === "ADMIN" || status !== "DRAFT",
+                  ).map((status) => (
                     <SelectItem key={status} value={status}>
-                      {status === "ALL" ? "All statuses" : status.replace(/_/g, " ")}
+                      {status === "ALL"
+                        ? "All statuses"
+                        : status.replace(/_/g, " ")}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
+              {profile?.role === "ADMIN" && (
+                <Select value={creatorFilter} onValueChange={setCreatorFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Created by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All creators</SelectItem>
+                    {[
+                      ...new Map(
+                        equbs.map((equb) => [
+                          equb.createdBy,
+                          equb.createdByName ?? equb.createdBy,
+                        ]),
+                      ).entries(),
+                    ]
+                      .sort(([, first], [, second]) =>
+                        first.localeCompare(second),
+                      )
+                      .map(([id, name]) => (
+                        <SelectItem key={id} value={id}>
+                          {name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              )}
+
               <Select
                 value={frequencyFilter}
                 onValueChange={(value) =>
-                  setFrequencyFilter(value as (typeof FREQUENCY_OPTIONS)[number])
+                  setFrequencyFilter(
+                    value as (typeof FREQUENCY_OPTIONS)[number],
+                  )
                 }
               >
                 <SelectTrigger className="w-full">
@@ -230,7 +300,9 @@ export default function SearchPage() {
                 <SelectContent>
                   {FREQUENCY_OPTIONS.map((frequency) => (
                     <SelectItem key={frequency} value={frequency}>
-                      {frequency === "ALL" ? "All frequencies" : frequency.toLowerCase()}
+                      {frequency === "ALL"
+                        ? "All frequencies"
+                        : frequency.toLowerCase()}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -261,7 +333,9 @@ export default function SearchPage() {
             <div className="space-y-3 rounded-xl border border-border bg-white p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Contribution range</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    Contribution range
+                  </p>
                   <p className="text-xs text-gray-500">
                     Filter by the contribution amount in ETB.
                   </p>
@@ -281,7 +355,9 @@ export default function SearchPage() {
               />
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>{contributionBounds[0]} ETB</span>
-                <span>{Math.max(contributionBounds[1], contributionBounds[0])} ETB</span>
+                <span>
+                  {Math.max(contributionBounds[1], contributionBounds[0])} ETB
+                </span>
               </div>
             </div>
 
@@ -304,7 +380,11 @@ export default function SearchPage() {
 
         <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {filteredEqubs.map((equb) => (
-            <Link key={equb.id} href={`/equbs/${equb.id}`} className="block h-full">
+            <Link
+              key={equb.id}
+              href={`/equbs/${equb.id}`}
+              className="block h-full"
+            >
               <Card className="h-full overflow-hidden transition-shadow hover:shadow-md">
                 <CardHeader>
                   <div className="flex items-start justify-between gap-3">
@@ -334,7 +414,9 @@ export default function SearchPage() {
                     </div>
                     <div>
                       <dt className="text-gray-500">Cycles</dt>
-                      <dd className="font-medium text-gray-900">{equb.numberOfCycles}</dd>
+                      <dd className="font-medium text-gray-900">
+                        {equb.numberOfCycles}
+                      </dd>
                     </div>
                     <div>
                       <dt className="text-gray-500">Created</dt>
@@ -357,7 +439,9 @@ export default function SearchPage() {
         {filteredEqubs.length === 0 && (
           <Card className="mt-6">
             <CardContent className="pt-6">
-              <p className="text-sm text-gray-500">No Equbs matched your search.</p>
+              <p className="text-sm text-gray-500">
+                No Equbs matched your search.
+              </p>
             </CardContent>
           </Card>
         )}

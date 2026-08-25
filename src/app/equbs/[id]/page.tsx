@@ -1,6 +1,8 @@
 "use client";
 
+import { EditEqubDialog } from "@/components/equbs/EditEqubDialog";
 import { Navbar } from "@/components/layout/Navbar";
+import { MockPaymentSheet } from "@/components/payments/MockPaymentSheet";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import {
@@ -19,6 +21,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { EqubLoading } from "@/components/ui/EqubLoading";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
   Table,
@@ -28,8 +31,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { EqubLoading } from "@/components/ui/EqubLoading";
-import { MockPaymentSheet } from "@/components/payments/MockPaymentSheet";
 import { formatMoney } from "@/lib/domain/money";
 import type {
   ContributionObligation,
@@ -39,14 +40,13 @@ import type {
   PayoutDraw,
 } from "@/lib/domain/types";
 import { getFirebaseAuth } from "@/lib/firebase/client";
+import { getBrowserTestDate, getTodayIsoDate } from "@/lib/testClock";
 import { formatDate } from "@/lib/utils";
 import { onIdTokenChanged, signOut } from "firebase/auth";
-import { CheckCheck, PencilLine, ShieldAlert, UserMinus } from "lucide-react";
+import { CheckCheck, PencilLine, UserMinus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { EditEqubDialog } from "@/components/equbs/EditEqubDialog";
-import { getBrowserTestDate, getTodayIsoDate } from "@/lib/testClock";
 
 interface EqubDetailData {
   equb: Equb;
@@ -72,6 +72,7 @@ interface EqubDetailData {
       email: string;
       rating: number;
     };
+    contributionStatus: ContributionObligation["status"] | "NOT_STARTED";
   }>;
   currentPoolMinor: number;
   currentPoolDisplay: string;
@@ -103,14 +104,12 @@ export default function EqubDetailPage({
   );
   const [bulkStatus, setBulkStatus] = useState<string | null>(null);
   const [startConfirmOpen, setStartConfirmOpen] = useState(false);
-  const [rejectTarget, setRejectTarget] = useState<
-    | {
-        membershipId: string;
-        memberName: string;
-      }
-    | null
-  >(null);
+  const [rejectTarget, setRejectTarget] = useState<{
+    membershipId: string;
+    memberName: string;
+  } | null>(null);
   const [withdrawConfirmOpen, setWithdrawConfirmOpen] = useState(false);
+  const paymentProvider = process.env.NEXT_PUBLIC_PAYMENT_PROVIDER ?? "mock";
 
   const loadData = useCallback(async (id: string, authToken: string) => {
     setLoading(true);
@@ -149,7 +148,13 @@ export default function EqubDetailPage({
       if (profileRes.ok) {
         const { profile } = await profileRes.json();
         setIsAdmin(profile.role === "ADMIN");
-        setUserName(profile.displayName ?? profile.email ?? user.displayName ?? user.email ?? "Account");
+        setUserName(
+          profile.displayName ??
+            profile.email ??
+            user.displayName ??
+            user.email ??
+            "Account",
+        );
       }
       loadData(equbId, t);
     });
@@ -420,7 +425,8 @@ export default function EqubDetailPage({
 
     if (res.ok) {
       const { result } = await res.json();
-      const approvedCount = result?.approved?.length ?? selectedMembershipIds.length;
+      const approvedCount =
+        result?.approved?.length ?? selectedMembershipIds.length;
       const skippedCount = result?.skipped?.length ?? 0;
       setSelectedMembershipIds([]);
       setBulkStatus(
@@ -469,7 +475,9 @@ export default function EqubDetailPage({
             searchHref={fallbackSearchHref}
             notificationsHref="/notifications"
             onSignOut={() =>
-              signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))
+              signOut(getFirebaseAuth()).then(
+                () => (window.location.href = "/"),
+              )
             }
           />
           <main className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center px-4 py-12">
@@ -483,7 +491,8 @@ export default function EqubDetailPage({
                     Equb not found
                   </h1>
                   <p className="text-sm text-gray-600">
-                    The Equb you were looking for does not exist or is no longer available.
+                    The Equb you were looking for does not exist or is no longer
+                    available.
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-3">
@@ -514,7 +523,8 @@ export default function EqubDetailPage({
     memberSummaries = [],
   } = data;
   const visibleMembers = memberSummaries.filter(
-    ({ membership }) => !["REJECTED", "LEFT", "REMOVED"].includes(membership.status),
+    ({ membership }) =>
+      !["REJECTED", "LEFT", "REMOVED"].includes(membership.status),
   );
   const memberCount = visibleMembers.length;
   const minimumApprovedMembersToStart = Math.max(2, equb.minimumMemberCount);
@@ -528,7 +538,9 @@ export default function EqubDetailPage({
     ),
   );
   const todayIso = getBrowserTestDate() ?? getTodayIsoDate();
-  const cycleDueReached = currentCycle ? currentCycle.dueDate <= todayIso : false;
+  const cycleDueReached = currentCycle
+    ? currentCycle.dueDate <= todayIso
+    : false;
   const memberRows = visibleMembers;
   const pendingMemberRows = memberRows.filter(
     ({ membership }) => membership.status === "PENDING",
@@ -539,12 +551,23 @@ export default function EqubDetailPage({
       selectedMembershipIds.includes(membership.id),
     );
   const selectedPendingCount = selectedMembershipIds.length;
-  const pendingObligations = userObligations.filter((o) => o.status !== "PAID");
+  const currentCycleObligation = currentCycle
+    ? userObligations.find(
+        (obligation) => obligation.cycleId === currentCycle.id,
+      )
+    : undefined;
+  const pendingObligations =
+    currentCycleObligation && currentCycleObligation.status !== "PAID"
+      ? [currentCycleObligation]
+      : [];
   const overdueObligations = userObligations.filter(
     (o) => o.status === "OVERDUE",
   );
   const memberNameByUserId = new Map(
-    memberSummaries.map(({ membership, user }) => [membership.userId, user.displayName]),
+    memberSummaries.map(({ membership, user }) => [
+      membership.userId,
+      user.displayName,
+    ]),
   );
   return (
     <div className="min-h-screen bg-gray-50">
@@ -554,7 +577,9 @@ export default function EqubDetailPage({
         isAdmin={isAdmin}
         searchHref={isAdmin ? "/equbs" : "/search"}
         notificationsHref="/notifications"
-        onSignOut={() => signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))}
+        onSignOut={() =>
+          signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))
+        }
       />
       <main className="mx-auto max-w-7xl px-4 py-8">
         <div className="flex items-start justify-between">
@@ -578,8 +603,7 @@ export default function EqubDetailPage({
               <div className="flex justify-between">
                 <dt className="text-gray-500">Members</dt>
                 <dd>
-                  {approvedMemberCount}{" "}
-                  / {equb.memberLimit}
+                  {approvedMemberCount} / {equb.memberLimit}
                 </dd>
               </div>
               <div className="flex justify-between">
@@ -658,7 +682,8 @@ export default function EqubDetailPage({
                 {pendingObligations.slice(0, 1).map((o) => (
                   <div key={o.id} className="space-y-2">
                     <p className="text-sm text-gray-600">
-                      Due: {formatMoney(o.totalDueMinor)} by {formatDate(o.dueDate)}
+                      Due: {formatMoney(o.totalDueMinor)} by{" "}
+                      {formatDate(o.dueDate)}
                     </p>
                     <Button
                       onClick={() => handlePay(o.id)}
@@ -673,14 +698,16 @@ export default function EqubDetailPage({
                   equb.status === "ACTIVE" &&
                   pendingObligations.length > 0 && (
                     <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                      The Equb has started. Please contribute right away. If this
-                      contribution is not paid by{" "}
-                      {formatDate(pendingObligations[0].dueDate)}, your rating will
-                      be reduced and you may be marked overdue.
+                      The Equb has started. Please contribute right away. If
+                      this contribution is not paid by{" "}
+                      {formatDate(pendingObligations[0].dueDate)}, your rating
+                      will be reduced and you may be marked overdue.
                     </div>
                   )}
                 {userMembership &&
-                  !["ACTIVE", "COMPLETED", "CANCELLED"].includes(equb.status) && (
+                  !["ACTIVE", "COMPLETED", "CANCELLED"].includes(
+                    equb.status,
+                  ) && (
                     <Button
                       variant="outline"
                       onClick={() => setWithdrawConfirmOpen(true)}
@@ -713,12 +740,12 @@ export default function EqubDetailPage({
                     {["DRAFT", "OPEN_FOR_MEMBERS", "LOCKED"].includes(
                       equb.status,
                     ) ? (
-                        <EditEqubDialog
-                          token={token}
-                          equb={equb}
-                          membersCount={memberCount}
-                          onSaved={() => loadData(equbId, token)}
-                        />
+                      <EditEqubDialog
+                        token={token}
+                        equb={equb}
+                        membersCount={memberCount}
+                        onSaved={() => loadData(equbId, token)}
+                      />
                     ) : null}
                     <Button
                       variant="destructive"
@@ -811,8 +838,8 @@ export default function EqubDetailPage({
                       </EmptyMedia>
                       <EmptyTitle>No members yet</EmptyTitle>
                       <EmptyDescription>
-                        Members and pending requests will appear here once people
-                        join this Equb.
+                        Members and pending requests will appear here once
+                        people join this Equb.
                       </EmptyDescription>
                     </EmptyHeader>
                   </EmptyContent>
@@ -830,7 +857,9 @@ export default function EqubDetailPage({
                         onChange={(event) => {
                           if (event.target.checked) {
                             setSelectedMembershipIds(
-                              pendingMemberRows.map(({ membership }) => membership.id),
+                              pendingMemberRows.map(
+                                ({ membership }) => membership.id,
+                              ),
                             );
                           } else {
                             setSelectedMembershipIds([]);
@@ -843,81 +872,105 @@ export default function EqubDetailPage({
                     <TableHead>Email</TableHead>
                     <TableHead>Rating</TableHead>
                     <TableHead>Joined</TableHead>
+                    <TableHead>Contribution</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {memberRows.map(({ membership, user }) => {
-                    const isPending = membership.status === "PENDING";
-                    const isChecked = selectedMembershipIds.includes(membership.id);
+                  {memberRows.map(
+                    ({ membership, user, contributionStatus }) => {
+                      const isPending = membership.status === "PENDING";
+                      const isChecked = selectedMembershipIds.includes(
+                        membership.id,
+                      );
 
-                    return (
-                      <TableRow key={membership.id}>
-                        <TableCell>
-                          {isPending ? (
-                            <input
-                              aria-label={`Select ${user.displayName}`}
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(event) => {
-                                setSelectedMembershipIds((current) =>
-                                  event.target.checked
-                                    ? [...current, membership.id]
-                                    : current.filter((id) => id !== membership.id),
-                                );
-                              }}
-                              className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                      return (
+                        <TableRow key={membership.id}>
+                          <TableCell>
+                            {isPending ? (
+                              <input
+                                aria-label={`Select ${user.displayName}`}
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(event) => {
+                                  setSelectedMembershipIds((current) =>
+                                    event.target.checked
+                                      ? [...current, membership.id]
+                                      : current.filter(
+                                          (id) => id !== membership.id,
+                                        ),
+                                  );
+                                }}
+                                className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                              />
+                            ) : (
+                              <span className="inline-flex h-4 w-4 items-center justify-center rounded border border-emerald-200 bg-emerald-50 text-emerald-600">
+                                <CheckCheck className="h-3 w-3" />
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium text-gray-900">
+                            {user.displayName}
+                          </TableCell>
+                          <TableCell>{user.email || user.id}</TableCell>
+                          <TableCell>{user.rating}/100</TableCell>
+                          <TableCell>
+                            {formatDate(membership.joinedAt)}
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge
+                              status={
+                                contributionStatus === "PAID"
+                                  ? "PAID"
+                                  : contributionStatus === "OVERDUE"
+                                    ? "OVERDUE"
+                                    : contributionStatus === "NOT_STARTED"
+                                      ? "NOT_STARTED"
+                                      : "NOT_PAID"
+                              }
                             />
-                          ) : (
-                            <span className="inline-flex h-4 w-4 items-center justify-center rounded border border-emerald-200 bg-emerald-50 text-emerald-600">
-                              <CheckCheck className="h-3 w-3" />
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-medium text-gray-900">
-                          {user.displayName}
-                        </TableCell>
-                        <TableCell>{user.email || user.id}</TableCell>
-                        <TableCell>{user.rating}/100</TableCell>
-                        <TableCell>{formatDate(membership.joinedAt)}</TableCell>
-                        <TableCell>
-                          <StatusBadge status={membership.status} />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {isPending ? (
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                loading={actionLoading}
-                                onClick={() => handleApprove(membership.id)}
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="destructive"
-                                loading={actionLoading}
-                                onClick={() =>
-                                  setRejectTarget({
-                                    membershipId: membership.id,
-                                    memberName: user.displayName,
-                                  })
-                                }
-                              >
-                                Reject
-                              </Button>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-gray-400">Approved</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge status={membership.status} />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {isPending ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  loading={actionLoading}
+                                  onClick={() => handleApprove(membership.id)}
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="destructive"
+                                  loading={actionLoading}
+                                  onClick={() =>
+                                    setRejectTarget({
+                                      membershipId: membership.id,
+                                      memberName: user.displayName,
+                                    })
+                                  }
+                                >
+                                  Reject
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-400">
+                                Approved
+                              </span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    },
+                  )}
                 </TableBody>
               </Table>
             )}
@@ -953,16 +1006,20 @@ export default function EqubDetailPage({
           </Card>
         )}
 
-        {currentCycle && isAdmin && !currentCycle.drawId && !cycleDueReached && (
-          <Card
-            title={`Cycle ${currentCycle.cycleNumber} - Draw Payout`}
-            className="mt-6"
-          >
-            <p className="text-sm text-gray-600">
-              The first payout becomes available on {formatDate(currentCycle.dueDate)}.
-            </p>
-          </Card>
-        )}
+        {currentCycle &&
+          isAdmin &&
+          !currentCycle.drawId &&
+          !cycleDueReached && (
+            <Card
+              title={`Cycle ${currentCycle.cycleNumber} - Draw Payout`}
+              className="mt-6"
+            >
+              <p className="text-sm text-gray-600">
+                The first payout becomes available on{" "}
+                {formatDate(currentCycle.dueDate)}.
+              </p>
+            </Card>
+          )}
 
         <Card title="Cycles & Payouts" className="mt-6">
           {cycles.length === 0 ? (
@@ -1005,8 +1062,8 @@ export default function EqubDetailPage({
                     </TableCell>
                     <TableCell>
                       {cycle.payoutRecipientId
-                        ? memberNameByUserId.get(cycle.payoutRecipientId) ??
-                          `${cycle.payoutRecipientId.slice(0, 8)}...`
+                        ? (memberNameByUserId.get(cycle.payoutRecipientId) ??
+                          `${cycle.payoutRecipientId.slice(0, 8)}...`)
                         : "-"}
                     </TableCell>
                   </TableRow>
@@ -1035,19 +1092,27 @@ export default function EqubDetailPage({
             >
               Cancel
             </Button>
-            <Button type="button" loading={actionLoading} onClick={handleConfirmedLock}>
+            <Button
+              type="button"
+              loading={actionLoading}
+              onClick={handleConfirmedLock}
+            >
               Start Equb
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(rejectTarget)} onOpenChange={(open) => !open && setRejectTarget(null)}>
+      <Dialog
+        open={Boolean(rejectTarget)}
+        onOpenChange={(open) => !open && setRejectTarget(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reject membership request?</DialogTitle>
             <DialogDescription>
-              {rejectTarget?.memberName} will be notified that their request was rejected.
+              {rejectTarget?.memberName} will be notified that their request was
+              rejected.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1062,7 +1127,9 @@ export default function EqubDetailPage({
               type="button"
               variant="destructive"
               loading={actionLoading}
-              onClick={() => rejectTarget && handleReject(rejectTarget.membershipId)}
+              onClick={() =>
+                rejectTarget && handleReject(rejectTarget.membershipId)
+              }
             >
               Reject request
             </Button>
@@ -1075,8 +1142,8 @@ export default function EqubDetailPage({
           <DialogHeader>
             <DialogTitle>Withdraw your membership?</DialogTitle>
             <DialogDescription>
-              This will remove you from the Equb before it starts. You can request
-              to join again later if the Equb is still open.
+              This will remove you from the Equb before it starts. You can
+              request to join again later if the Equb is still open.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1087,7 +1154,11 @@ export default function EqubDetailPage({
             >
               Cancel
             </Button>
-            <Button type="button" loading={actionLoading} onClick={handleWithdraw}>
+            <Button
+              type="button"
+              loading={actionLoading}
+              onClick={handleWithdraw}
+            >
               Withdraw
             </Button>
           </DialogFooter>
@@ -1104,6 +1175,24 @@ export default function EqubDetailPage({
           dueDate={activePayment.dueDate}
           equbName={equb.name}
           obligationLabel="Contribution payment"
+          provider={paymentProvider === "chapa" ? "chapa" : "mock"}
+          onChapaSuccess={async () => {
+            const response = await fetch("/api/payments", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                action: "verify",
+                providerTransactionId: activePayment.providerTransactionId,
+              }),
+            });
+            if (!response.ok) throw new Error("Unable to verify Chapa payment");
+            setPaymentSheetOpen(false);
+            await loadData(equbId, token);
+            toast.success("Payment verified.");
+          }}
           onOpenChange={(open) => setPaymentSheetOpen(open)}
           onOutcome={handlePaymentOutcome}
         />
