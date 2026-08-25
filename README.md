@@ -283,15 +283,18 @@ Tests cover: money utilities, lifecycle transitions, eligibility rules, random s
 - **Admin audit viewer** — available in the app at `/admin/audit`
 - **User dashboard split** — active membership Equbs are grouped separately from discoverable Equbs
 - **User/admin search pages** — `/search` is user-facing, `/equbs` is admin-facing
-- **Automated cycle advancement is not implemented yet** — admin triggers draws manually
-- **Scheduler integration is not implemented yet** — the recommended free option is documented below
+- **Automated cycle advancement & scheduler** — implemented via QStash signature verification at `/api/admin/maintenance/payouts` and managed via `/api/admin/maintenance/schedule`
+- **Chapa Outbound Transfers & Dynamic Banks** — integrated via `src/lib/services/chapaTransferService.ts` and `GET /api/banks` with fallback for 10 Ethiopian financial institutions
+- **Webhook Event Discrimination** — `POST /api/webhooks/payments` discriminates incoming collection checkouts from outbound transfer webhooks
 
 ## Future Integration Points
 
 | Feature                    | Integration Point                                                      |
 | -------------------------- | ---------------------------------------------------------------------- |
-| Real payments              | `src/lib/payments/index.ts` → new provider class                       |
-| Payment webhooks           | `src/app/api/webhooks/payments/route.ts`                               |
+| Real payments (Inflow)     | `src/lib/payments/index.ts` → `ChapaPaymentProvider.ts`                |
+| Outbound Payouts (Outflow) | `src/lib/services/chapaTransferService.ts` → `POST /v1/transfers`      |
+| Dynamic Bank List          | `src/app/api/banks/route.ts` → `GET /api/banks`                        |
+| Payment & Transfer Webhooks| `src/app/api/webhooks/payments/route.ts`                               |
 | SMS notifications          | `src/lib/services/notificationService.ts`                              |
 | Member replacement         | New service + membership status transitions                            |
 | Penalty auto-application   | `markOverdueObligations()` + ledger entries                            |
@@ -300,6 +303,7 @@ Tests cover: money utilities, lifecycle transitions, eligibility rules, random s
 | Additional draw strategies | `src/lib/payout/PayoutSelectionStrategy.ts`                            |
 | Automated cycle scheduler  | Upstash QStash schedule invoking a protected Next.js maintenance route |
 | Financial reports          | Query `ledger` collection with aggregation                             |
+
 
 ## Automated Cycle Jobs
 
@@ -313,19 +317,48 @@ day, 10 active schedules, 50 GB bandwidth, a 1 MB message size, and a maximum
 free limits should be comfortable for a small deployment.
 
 The intended design is one QStash schedule, for example once per day in UTC,
-calling a protected route such as `/api/admin/maintenance/cycles`. That route
+calling the protected route `/api/admin/maintenance/payouts`. Create or update
+the schedule by calling `POST /api/admin/maintenance/schedule` with an admin
+Firebase token. That route
 should:
 
 1. Verify the `Upstash-Signature` using QStash signing keys.
 2. Query Firestore for due cycles and overdue obligations.
-3. Advance only eligible cycles using Firestore transactions.
-4. Use stable cycle IDs and existing draw IDs for idempotency.
-5. Return `200` only after the work is complete; leave failed work retryable.
+3. Mark overdue obligations before evaluating eligibility.
+4. Draw only from members who paid the current cycle, have no overdue or partial obligations, and have not already received a payout.
+5. Use stable cycle IDs and existing draw IDs for idempotency.
+6. Report the selected member, paid member, and every member not paid to all admins.
+7. Return `200` only after the work is complete; leave failed work retryable.
 
 QStash schedules the job and retries delivery; it must never decide payout
 eligibility or write financial records. Those decisions belong in the service
 layer and Firestore transactions. A separate admin-only manual trigger should
 remain available for recovery and operational review.
+
+### Outbound Disbursement & Chapa Transfers Reality Check
+
+Automated outbound transfers from your application to members' bank accounts or mobile wallets (CBE, Awash, Dashen, Telebirr, M-Pesa) via Chapa (`POST /v2/payouts` or `POST /v1/transfers`) have specific **legal, operational, and financial requirements**:
+
+1. **Business Compliance & KYC (Mandatory for Live Payouts):**
+   - Chapa Transfer/Payout API requires a fully verified **Live Business Merchant Account** with an approved trade license in Ethiopia (TIN Certificate, Business License, General Manager / Sole Proprietor ID, Proof of Address).
+   - Individual developers or unverified accounts cannot disburse real money via the API. In test mode, transfers can only be simulated with test keys (`CHAPA_TEST_...`).
+2. **Settlement Timing (Ledger vs. Available Balance):**
+   - When members pay contributions via Chapa Inline / Collections, the funds enter your **Ledger Balance**.
+   - Chapa requires a clearance/settlement period (typically **T+1 or ~24 hours**) before funds convert into the **Available Balance**.
+   - The Transfer/Payout API strictly draws from the **Available Balance**. If a sweep runs immediately on the contribution deadline before settlement, the automated transfer fails with `Insufficient Available Balance` unless the merchant pre-funds their Chapa float account.
+3. **Recipient Bank Account Details:**
+   - Outbound disbursement requires valid destination details for each winner:
+     - `bank_slug` (e.g., `cbe`, `telebirr`, `awash_bank`, etc.)
+     - `account_number` (or phone number for Telebirr / CBE Birr)
+     - `account_name` (must match the bank record)
+   - User profiles and memberships must store verified bank info before automated API transfers can execute.
+4. **Approval Checks & Security:**
+   - By default, Chapa merchants have 2FA and OTP/URL transfer approvals enabled on the dashboard. Unattended automated API payouts require coordination with Chapa support to whitelist direct API transfers.
+5. **Asynchronous Settlement & Reversals:**
+   - Interbank transfers via EthSwitch/banks are asynchronous. Payouts must be tracked in `PENDING`/`PROCESSING` and confirmed via Chapa webhooks or verification endpoints before final ledger completion.
+
+Currently, `completePayout()` performs an **internal ledger and state transition**. When QStash triggers `/api/admin/maintenance/payouts`, it creates an eligible draw, records the payout as `PENDING`, and notifies admins. Real-money outbound transfers can be completed manually or plugged into the Chapa Transfer API once the compliance prerequisites and bank fields are configured.
+
 
 ### Alternatives
 

@@ -49,3 +49,5 @@ next-env.d.ts
 /coverage
 
 service.json
+.geminiignore
+.antigravity/rules.md

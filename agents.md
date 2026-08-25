@@ -19,10 +19,13 @@ Most business logic lives in `src/lib`, while route handlers in `src/app/api` ex
 
 ### Authentication and profiles
 
-- Registration happens in `src/app/(auth)/register/page.tsx`.
-- A user signs up with Firebase Auth, then the client posts the ID token to `POST /api/users/profile`.
+- Registration happens in `src/app/(auth)/register/page.tsx` with a modern glassmorphic UI.
+- Registration collects personal credentials along with payout destination bank details (`bankCode`, `bankName`, `accountNumber`, `accountName`).
+- Dynamic bank options are served via `GET /api/banks` backed by Chapa Bank List API and a 10-institution Ethiopian fallback list.
+- A user signs up with Firebase Auth, then the client posts the ID token and payout account to `POST /api/users/profile`.
 - `src/app/api/users/profile/route.ts` verifies the token and creates a Firestore user profile if one does not already exist.
 - New profiles default to `role: "USER"` in `src/lib/firebase/auth.ts`.
+- Profile updates (including payout bank account) can be patched via `PATCH /api/users/profile`.
 
 ### Admin access
 
@@ -54,18 +57,24 @@ Most business logic lives in `src/lib`, while route handlers in `src/app/api` ex
 - Draws use a selection strategy from `src/lib/payout/RandomSelectionStrategy.ts`.
 - Every major action creates audit logs, and many actions create notifications and ledger entries.
 - The Equb detail page's `Current pool` value is derived from ledger entries, not a frontend calculation.
-- Chapa is available through `src/lib/payments/ChapaPaymentProvider.ts` and is selected with `PAYMENT_PROVIDER=chapa`.
-- Chapa Inline JS is rendered in the contribution sheet with CBE Birr, BOA Card, Telebirr, and M-Pesa enabled.
-- Chapa callbacks and webhooks must be verified server-side; never trust browser amount or success values.
-- Verified Chapa amounts must match the stored obligation before `verifyAndRecordPayment()` records the ledger entry.
+- Chapa collection is available through `src/lib/payments/ChapaPaymentProvider.ts` (`PAYMENT_PROVIDER=chapa`).
+- Chapa outbound transfer is handled through `src/lib/services/chapaTransferService.ts` (`POST https://api.chapa.co/v1/transfers`), strictly mapping `bankCode`, `accountNumber`, and `accountName`.
+- `POST /api/webhooks/payments` discriminates incoming collections from outbound transfer webhooks (`transfer.success`, `transfer.failed`).
+- Payout state machine: `PENDING` -> `PROCESSING` | `AWAITING_ADMIN_APPROVAL` -> `COMPLETED` | `FAILED`.
+- Draw execution is non-blocking: API transfer failures or manual 2FA requirements do NOT roll back the core cycle draw and ledger.
+- Winner receives an initial "processing" notification on draw, and ONLY receives the final transfer success notification once Chapa webhook or verification confirms settlement.
+- Periodic reconciliation in `runAutomatedPayouts` verifies transfers stuck > 12h and emits admin escalations if unresolved after 24h.
 
 ### Automation and scheduling
 
-- Automated cycle advancement and payouts are not implemented yet; admin-triggered draws remain the current behavior.
-- The preferred free scheduler is Upstash QStash: one signed recurring request to a protected Next.js maintenance route.
+- Automated payout orchestration is available at `POST /api/admin/maintenance/payouts`; admin-triggered draws remain available for recovery.
+- The preferred free scheduler is Upstash QStash: one signed recurring request to the protected payout maintenance route. Create it through the admin-only `POST /api/admin/maintenance/schedule` route.
 - QStash is only a delivery mechanism. Firestore transactions and service-layer rules remain responsible for eligibility, payout selection, audit logs, and idempotency.
 - QStash secrets are server-only: `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, and `QSTASH_NEXT_SIGNING_KEY`.
 - Cloudflare Cron Triggers are the main alternative; GitHub Actions and Vercel Hobby scheduling are not preferred for financial jobs because of documented timing or availability limitations.
+- The automated job reports selected, paid, and not-paid members to every admin using idempotent notifications.
+- `completePayout()` finalizes the ledger and sends the settlement confirmation notification to the winner.
+
 
 ## Data Model
 

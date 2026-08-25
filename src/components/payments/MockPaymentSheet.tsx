@@ -77,14 +77,16 @@ export function MockPaymentSheet({
       const publicKey = process.env.NEXT_PUBLIC_CHAPA_PUBLIC_KEY;
       if (!publicKey || !chapaContainerRef.current) return;
 
-      const module = await import("@chapa_et/inline.js");
+      // @ts-ignore
+      const module = await import("@chapa_et/inline.js/lib/inline.js");
       if (cancelled || !chapaContainerRef.current) return;
       chapaContainerRef.current.replaceChildren();
-      const ChapaCheckout = module.default as new (
+      const ChapaCheckout = (module.default ?? module) as unknown as new (
         options: Record<string, unknown>,
       ) => {
         initialize: (containerId: string) => void;
       };
+
       const chapa = new ChapaCheckout({
         publicKey,
         amount: (amountMinor / 100).toFixed(2),

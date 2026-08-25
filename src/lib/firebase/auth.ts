@@ -36,6 +36,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     rating: normalizeRating(data.rating),
     ratingUpdatedAt: data.ratingUpdatedAt ?? now,
     phone: data.phone,
+    payoutAccount: data.payoutAccount,
     createdAt: data.createdAt ?? now,
     updatedAt: data.updatedAt ?? now,
   };
@@ -56,6 +57,8 @@ export async function createUserProfile(params: {
   email: string;
   displayName: string;
   role?: UserRole;
+  phone?: string;
+  payoutAccount?: import("@/lib/domain/types").PayoutAccount;
 }): Promise<UserProfile> {
   const db = getAdminDb();
   const now = new Date().toISOString();
@@ -66,12 +69,39 @@ export async function createUserProfile(params: {
     role: params.role ?? "USER",
     rating: DEFAULT_RATING,
     ratingUpdatedAt: now,
+    phone: params.phone,
+    ...(params.payoutAccount ? { payoutAccount: params.payoutAccount } : {}),
     createdAt: now,
     updatedAt: now,
   };
 
   await db.collection(COLLECTIONS.users).doc(profile.id).set(profile);
   return profile;
+}
+
+export async function updateUserProfile(
+  userId: string,
+  updates: Partial<Pick<UserProfile, "displayName" | "phone" | "payoutAccount">>
+): Promise<UserProfile> {
+  const db = getAdminDb();
+  const current = await getUserProfile(userId);
+  if (!current) throw new Error("User profile not found");
+
+  const now = new Date().toISOString();
+  const patch: Record<string, unknown> = {
+    updatedAt: now,
+  };
+
+  if (updates.displayName !== undefined) patch.displayName = updates.displayName;
+  if (updates.phone !== undefined) patch.phone = updates.phone;
+  if (updates.payoutAccount !== undefined) patch.payoutAccount = updates.payoutAccount;
+
+  await db.collection(COLLECTIONS.users).doc(userId).update(patch);
+  return {
+    ...current,
+    ...updates,
+    updatedAt: now,
+  };
 }
 
 export async function adjustUserRating(

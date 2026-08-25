@@ -147,7 +147,19 @@ export interface PaymentRecord {
 
 // ─── Payouts ───────────────────────────────────────────────────────────────────
 
-export type PayoutStatus = "PENDING" | "COMPLETED";
+export type PayoutStatus =
+  | "PENDING"
+  | "PROCESSING"
+  | "AWAITING_ADMIN_APPROVAL"
+  | "COMPLETED"
+  | "FAILED";
+
+export interface PayoutAccount {
+  bankCode: string; // e.g. "cbe", "656", "telebirr"
+  bankName: string; // e.g. "Commercial Bank of Ethiopia"
+  accountNumber: string; // Bank account or phone number
+  accountName: string; // Full name on record
+}
 
 export interface Payout {
   id: string;
@@ -158,8 +170,17 @@ export interface Payout {
   amountMinor: MoneyMinor;
   status: PayoutStatus;
   drawId: string;
-  createdAt: string;
+  transferReference?: string;
+  providerTransactionId?: string;
+  bankCode?: string;
+  bankName?: string;
+  accountNumber?: string;
+  accountName?: string;
+  failureReason?: string;
+  initiatedAt?: string;
   completedAt?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 // ─── Draw audit ────────────────────────────────────────────────────────────────
@@ -224,6 +245,9 @@ export type AuditAction =
   | "PAYMENT_FAILED"
   | "PAYOUT_CREATED"
   | "PAYOUT_COMPLETED"
+  | "PAYOUT_TRANSFER_INITIATED"
+  | "PAYOUT_TRANSFER_AWAITING_APPROVAL"
+  | "PAYOUT_TRANSFER_FAILED"
   | "MEMBER_REMOVED"
   | "EQUB_CANCELLED"
   | "EQUB_PAUSED"
@@ -249,6 +273,8 @@ export type NotificationType =
   | "PAYMENT_SUCCESS"
   | "PAYMENT_FAILED"
   | "PAYOUT_RECEIVED"
+  | "PAYOUT_PROCESSING"
+  | "PAYOUT_ACTION_REQUIRED"
   | "PAYOUT_DRAW_RESULT"
   | "MEMBERSHIP_REQUESTED"
   | "MEMBERSHIP_APPROVED"
@@ -281,6 +307,8 @@ export interface UserProfile {
   rating: number;
   ratingUpdatedAt: string;
   phone?: string;
+  payoutAccount?: PayoutAccount;
   createdAt: string;
   updatedAt: string;
 }
+

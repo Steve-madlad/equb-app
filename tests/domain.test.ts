@@ -328,3 +328,25 @@ describe("cycle utilities", () => {
     expect(errors.length).toBeGreaterThan(0);
   });
 });
+
+describe("payout accounts and supported institutions", () => {
+  it("includes top Ethiopian institutions in fallback list", async () => {
+    const { FALLBACK_ETHIOPIAN_BANKS } = await import(
+      "@/lib/services/chapaTransferService"
+    );
+    expect(FALLBACK_ETHIOPIAN_BANKS.length).toBe(10);
+    const codes = FALLBACK_ETHIOPIAN_BANKS.map((b) => b.code);
+    expect(codes).toContain("cbe");
+    expect(codes).toContain("telebirr");
+    expect(codes).toContain("abyssinia");
+    expect(codes).toContain("awash");
+    expect(codes).toContain("dashen");
+    expect(codes).toContain("mpesa");
+    expect(codes).toContain("cbebirr");
+    expect(codes).toContain("coop");
+    expect(codes).toContain("amhara");
+    expect(codes).toContain("enat");
+  });
+});
+
+
