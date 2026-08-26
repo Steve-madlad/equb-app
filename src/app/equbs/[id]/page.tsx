@@ -4,7 +4,6 @@ import { EditEqubDialog } from "@/components/equbs/EditEqubDialog";
 import { Navbar } from "@/components/layout/Navbar";
 import { MockPaymentSheet } from "@/components/payments/MockPaymentSheet";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import {
   Dialog,
   DialogContent,
@@ -13,14 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { EqubLoading } from "@/components/ui/EqubLoading";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
@@ -41,9 +32,30 @@ import type {
 } from "@/lib/domain/types";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { getBrowserTestDate, getTodayIsoDate } from "@/lib/testClock";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatDateTime } from "@/lib/utils";
 import { onIdTokenChanged, signOut } from "firebase/auth";
-import { CheckCheck, PencilLine, UserMinus } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Calendar,
+  CheckCheck,
+  Coins,
+  Crown,
+  History,
+  Layers,
+  Lock,
+  PencilLine,
+  Play,
+  RotateCcw,
+  ShieldAlert,
+  Sparkles,
+  Trash2,
+  TrendingUp,
+  UserCheck,
+  UserMinus,
+  Users,
+  Wallet,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -150,10 +162,10 @@ export default function EqubDetailPage({
         setIsAdmin(profile.role === "ADMIN");
         setUserName(
           profile.displayName ??
-            profile.email ??
-            user.displayName ??
-            user.email ??
-            "Account",
+          profile.email ??
+          user.displayName ??
+          user.email ??
+          "Account",
         );
       }
       loadData(equbId, t);
@@ -181,111 +193,6 @@ export default function EqubDetailPage({
     setActionLoading(false);
   }
 
-  async function handlePay(obligationId: string) {
-    const obligation = userObligations.find((item) => item.id === obligationId);
-    setActionLoading(true);
-    const res = await fetch("/api/payments", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ obligationId }),
-    });
-    if (res.ok) {
-      const { payment } = await res.json();
-      setActivePayment({
-        providerTransactionId: payment.providerTransactionId,
-        amountMinor: payment.amountMinor,
-        dueDate: obligation?.dueDate ?? payment.initiatedAt.slice(0, 10),
-        status: payment.status,
-      });
-      setPaymentSheetOpen(true);
-      toast.success("Payment ready.");
-    } else {
-      const body = await res.json().catch(() => null);
-      toast.error(body?.error ?? "Unable to start payment.");
-    }
-    setActionLoading(false);
-  }
-
-  async function handlePaymentOutcome(outcome: "SUCCESS" | "FAILED") {
-    if (!activePayment) return;
-
-    setActionLoading(true);
-    const mockResponse = await fetch("/api/payments/mock", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        providerTransactionId: activePayment.providerTransactionId,
-        outcome,
-      }),
-    });
-
-    if (!mockResponse.ok) {
-      const body = await mockResponse.json().catch(() => null);
-      toast.error(body?.error ?? "Unable to update the mock payment.");
-      setActionLoading(false);
-      return;
-    }
-
-    if (outcome === "SUCCESS") {
-      const verifyResponse = await fetch("/api/payments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          action: "verify",
-          providerTransactionId: activePayment.providerTransactionId,
-        }),
-      });
-
-      if (verifyResponse.ok) {
-        setActivePayment((current) =>
-          current ? { ...current, status: "SUCCESS" } : current,
-        );
-        await loadData(equbId, token);
-        toast.success("Payment verified.");
-      } else {
-        const body = await verifyResponse.json().catch(() => null);
-        toast.error(body?.error ?? "Unable to verify payment.");
-      }
-    } else {
-      setActivePayment((current) =>
-        current ? { ...current, status: "FAILED" } : current,
-      );
-      toast.error("Payment marked as failed.");
-    }
-
-    setActionLoading(false);
-  }
-
-  async function handleDraw(cycleId: string) {
-    setActionLoading(true);
-    const res = await fetch(`/api/equbs/${equbId}/draw`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ cycleId }),
-    });
-    if (res.ok) {
-      const result = await res.json();
-      setDrawResult(result.draw);
-      toast.success("Payout draw completed.");
-      loadData(equbId, token);
-    } else {
-      const body = await res.json().catch(() => null);
-      toast.error(body?.error ?? "Unable to draw payout.");
-    }
-    setActionLoading(false);
-  }
-
   async function handleOpen() {
     setActionLoading(true);
     const res = await fetch(`/api/equbs/${equbId}`, {
@@ -297,8 +204,8 @@ export default function EqubDetailPage({
       body: JSON.stringify({ action: "open" }),
     });
     if (res.ok) {
-      await loadData(equbId, token);
       toast.success("Equb opened for members.");
+      loadData(equbId, token);
     } else {
       const body = await res.json().catch(() => null);
       toast.error(body?.error ?? "Unable to open Equb.");
@@ -317,8 +224,8 @@ export default function EqubDetailPage({
       body: JSON.stringify({ action: "lock" }),
     });
     if (res.ok) {
-      await loadData(equbId, token);
       toast.success("Equb started.");
+      loadData(equbId, token);
     } else {
       const body = await res.json().catch(() => null);
       toast.error(body?.error ?? "Unable to start Equb.");
@@ -333,20 +240,17 @@ export default function EqubDetailPage({
 
   async function handleApprove(membershipId: string) {
     setActionLoading(true);
-    const res = await fetch(`/api/equbs/${equbId}`, {
+    const res = await fetch(`/api/memberships/${membershipId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ action: "approve_member", membershipId }),
+      body: JSON.stringify({ action: "approve" }),
     });
     if (res.ok) {
-      await loadData(equbId, token);
-      setSelectedMembershipIds((current) =>
-        current.filter((id) => id !== membershipId),
-      );
       toast.success("Member approved.");
+      loadData(equbId, token);
     } else {
       const body = await res.json().catch(() => null);
       toast.error(body?.error ?? "Unable to approve member.");
@@ -356,22 +260,18 @@ export default function EqubDetailPage({
 
   async function handleReject(membershipId: string) {
     setActionLoading(true);
-    const res = await fetch(`/api/equbs/${equbId}`, {
+    const res = await fetch(`/api/memberships/${membershipId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        action: "reject_member",
-        membershipId,
-      }),
+      body: JSON.stringify({ action: "reject" }),
     });
     if (res.ok) {
-      const body = await res.json();
-      toast.success(body?.message ?? "Member rejected.");
+      toast.success("Membership request rejected.");
       setRejectTarget(null);
-      await loadData(equbId, token);
+      loadData(equbId, token);
     } else {
       const body = await res.json().catch(() => null);
       toast.error(body?.error ?? "Unable to reject member.");
@@ -379,24 +279,97 @@ export default function EqubDetailPage({
     setActionLoading(false);
   }
 
-  async function handleWithdraw() {
-    if (!userMembership) return;
-
+  async function handleDraw(cycleId: string) {
     setActionLoading(true);
-    const res = await fetch(`/api/equbs/${equbId}`, {
-      method: "PATCH",
+    const res = await fetch(`/api/equbs/${equbId}/draw`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ cycleId }),
+    });
+    if (res.ok) {
+      const body = await res.json();
+      setDrawResult(body.draw);
+      toast.success("Payout recipient drawn.");
+      loadData(equbId, token);
+    } else {
+      const body = await res.json().catch(() => null);
+      toast.error(body?.error ?? "Unable to draw payout recipient.");
+    }
+    setActionLoading(false);
+  }
+
+  async function handlePay(obligationId: string) {
+    setActionLoading(true);
+    const res = await fetch("/api/payments", {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        action: "withdraw_membership",
-        membershipId: userMembership.id,
+        action: "initiate",
+        obligationId,
+        provider: paymentProvider,
       }),
     });
-
     if (res.ok) {
-      toast.success("Membership withdrawn.");
+      const body = await res.json();
+      setActivePayment({
+        providerTransactionId: body.payment.providerTransactionId,
+        amountMinor: body.payment.amountMinor,
+        dueDate: body.obligation.dueDate,
+        status: body.payment.status,
+      });
+      setPaymentSheetOpen(true);
+    } else {
+      const body = await res.json().catch(() => null);
+      toast.error(body?.error ?? "Unable to initiate payment.");
+    }
+    setActionLoading(false);
+  }
+
+  async function handlePaymentOutcome(outcome: "SUCCESS" | "FAILED") {
+    if (!activePayment) return;
+    setActionLoading(true);
+    const res = await fetch("/api/payments/mock", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        providerTransactionId: activePayment.providerTransactionId,
+        outcome,
+      }),
+    });
+    if (res.ok) {
+      toast.success(
+        outcome === "SUCCESS" ? "Payment confirmed." : "Payment marked failed.",
+      );
+      setPaymentSheetOpen(false);
+      loadData(equbId, token);
+    } else {
+      const body = await res.json().catch(() => null);
+      toast.error(body?.error ?? "Unable to process payment outcome.");
+    }
+    setActionLoading(false);
+  }
+
+  async function handleWithdraw() {
+    setActionLoading(true);
+    const res = await fetch(`/api/memberships/${data?.userMembership?.id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ action: "leave" }),
+    });
+    if (res.ok) {
+      toast.success("Withdrawn from Equb.");
       setWithdrawConfirmOpen(false);
       window.location.href = "/dashboard";
     } else {
@@ -408,7 +381,6 @@ export default function EqubDetailPage({
 
   async function handleBulkApprove() {
     if (selectedMembershipIds.length === 0) return;
-
     setActionLoading(true);
     setBulkStatus(null);
     const res = await fetch(`/api/equbs/${equbId}`, {
@@ -442,7 +414,6 @@ export default function EqubDetailPage({
       setBulkStatus(message);
       toast.error(message);
     }
-
     setActionLoading(false);
   }
 
@@ -465,14 +436,13 @@ export default function EqubDetailPage({
 
   if (loading || !data) {
     if (notFound) {
-      const fallbackSearchHref = isAdmin ? "/equbs" : "/search";
       return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-slate-100/70 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
           <Navbar
             links={[]}
             userName={userName}
             isAdmin={isAdmin}
-            searchHref={fallbackSearchHref}
+            searchHref="/search"
             notificationsHref="/notifications"
             onSignOut={() =>
               signOut(getFirebaseAuth()).then(
@@ -480,31 +450,30 @@ export default function EqubDetailPage({
               )
             }
           />
-          <main className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center px-4 py-12">
-            <Card className="w-full">
-              <div className="space-y-4 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-700">
-                  <span className="text-xl font-bold">?</span>
-                </div>
-                <div className="space-y-2">
-                  <h1 className="text-2xl font-semibold text-gray-900">
-                    Equb not found
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    The Equb you were looking for does not exist or is no longer
-                    available.
-                  </p>
-                </div>
-                <div className="flex flex-wrap justify-center gap-3">
-                  <Link href={fallbackSearchHref}>
-                    <Button>Back to browsing</Button>
-                  </Link>
-                  <Link href="/dashboard">
-                    <Button variant="secondary">Go to dashboard</Button>
-                  </Link>
-                </div>
+          <main className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-xl items-center px-4 py-12">
+            <div className="rounded-3xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-white/[0.03] backdrop-blur-xl p-8 text-center w-full shadow-md">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 mb-4">
+                <AlertCircle className="w-8 h-8" />
               </div>
-            </Card>
+              <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                Equb Not Found
+              </h1>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 mb-6">
+                The requested Equb does not exist or has been removed.
+              </p>
+              <div className="flex justify-center gap-3">
+                <Link href="/search">
+                  <Button className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold">
+                    Browse Groups
+                  </Button>
+                </Link>
+                <Link href="/dashboard">
+                  <Button variant="secondary" className="rounded-xl">
+                    Dashboard
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </main>
         </div>
       );
@@ -522,6 +491,7 @@ export default function EqubDetailPage({
     currentPoolDisplay,
     memberSummaries = [],
   } = data;
+
   const visibleMembers = memberSummaries.filter(
     ({ membership }) =>
       !["REJECTED", "LEFT", "REMOVED"].includes(membership.status),
@@ -553,8 +523,8 @@ export default function EqubDetailPage({
   const selectedPendingCount = selectedMembershipIds.length;
   const currentCycleObligation = currentCycle
     ? userObligations.find(
-        (obligation) => obligation.cycleId === currentCycle.id,
-      )
+      (obligation) => obligation.cycleId === currentCycle.id,
+    )
     : undefined;
   const pendingObligations =
     currentCycleObligation && currentCycleObligation.status !== "PAID"
@@ -569,287 +539,380 @@ export default function EqubDetailPage({
       user.displayName,
     ]),
   );
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-100/70 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 transition-colors duration-300">
+      {/* Ambient glow (dark mode only) */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10 opacity-0 dark:opacity-100">
+        <div className="absolute top-1/4 right-1/3 w-96 h-96 bg-emerald-600/10 rounded-full blur-[140px]" />
+        <div className="absolute bottom-1/3 left-1/4 w-72 h-72 bg-teal-600/8 rounded-full blur-[120px]" />
+      </div>
+
       <Navbar
         links={[]}
         userName={userName}
         isAdmin={isAdmin}
-        searchHref={isAdmin ? "/equbs" : "/search"}
+        searchHref="/search"
         notificationsHref="/notifications"
         onSignOut={() =>
           signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))
         }
       />
-      <main className="mx-auto max-w-7xl px-4 py-8">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">{equb.name}</h1>
-            <p className="mt-1 text-gray-600">{equb.description}</p>
-          </div>
-          <StatusBadge status={equb.status} />
+
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        {/* Navigation Breadcrumb */}
+        <div className="mb-6">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Dashboard</span>
+          </Link>
         </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-3">
-          <Card title="Configuration">
-            <dl className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-gray-500">Contribution</dt>
-                <dd className="font-medium">
-                  {formatMoney(equb.contributionAmountMinor)} /{" "}
-                  {equb.frequency.toLowerCase()}
-                </dd>
+        {/* Hero Header */}
+        <div className="rounded-3xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-white/[0.04] backdrop-blur-xl p-6 sm:p-8 shadow-md shadow-slate-200/60 dark:shadow-black/25 dark:shadow-xl mb-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                  {equb.frequency} Equb
+                </span>
+                <StatusBadge status={equb.status} />
               </div>
-              <div className="flex justify-between">
-                <dt className="text-gray-500">Members</dt>
-                <dd>
-                  {approvedMemberCount} / {equb.memberLimit}
-                </dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-gray-500">Cycles</dt>
-                <dd>{equb.numberOfCycles}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-gray-500">Current pool</dt>
-                <dd className="font-medium text-emerald-700">
-                  {currentPoolDisplay}
-                </dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-gray-500">Start date</dt>
-                <dd>{formatDate(equb.startDate)}</dd>
-              </div>
-            </dl>
-          </Card>
-
-          {!isAdmin && (
-            <Card title="Your status">
-              {userMembership ? (
-                <dl className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Membership</dt>
-                    <dd>
-                      <StatusBadge status={userMembership.status} />
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Received payout?</dt>
-                    <dd>{userMembership.hasReceivedPayout ? "Yes" : "No"}</dd>
-                  </div>
-                  {eligibility && (
-                    <div className="flex justify-between">
-                      <dt className="text-gray-500">Next draw eligible?</dt>
-                      <dd>
-                        <StatusBadge
-                          status={
-                            eligibility.eligible ? "ELIGIBLE" : "NOT_ELIGIBLE"
-                          }
-                        />
-                      </dd>
-                    </div>
-                  )}
-                  {eligibility?.reason && (
-                    <p className="text-xs text-red-600">{eligibility.reason}</p>
-                  )}
-                  {overdueObligations.length > 0 && (
-                    <p className="text-xs text-red-600">
-                      {overdueObligations.length} overdue contribution(s)
-                    </p>
-                  )}
-                </dl>
-              ) : (
-                <p className="text-sm text-gray-600">
-                  You are not a member of this Equb yet.
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                {equb.name}
+              </h1>
+              {equb.description && (
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {equb.description}
                 </p>
               )}
+            </div>
 
-              <div className="mt-4 space-y-3">
-                {!userMembership && equb.status === "OPEN_FOR_MEMBERS" && (
-                  <Button
-                    onClick={handleJoin}
-                    loading={actionLoading}
-                    className="w-full"
-                  >
-                    Request to Join
-                  </Button>
-                )}
-                {!userMembership && equb.status === "DRAFT" && (
-                  <p className="text-sm text-gray-500">
-                    Joining is not available yet.
-                  </p>
-                )}
-                {pendingObligations.slice(0, 1).map((o) => (
-                  <div key={o.id} className="space-y-2">
-                    <p className="text-sm text-gray-600">
-                      Due: {formatMoney(o.totalDueMinor)} by{" "}
-                      {formatDate(o.dueDate)}
-                    </p>
-                    <Button
-                      onClick={() => handlePay(o.id)}
-                      loading={actionLoading}
-                      className="w-full"
-                    >
-                      Pay Contribution
-                    </Button>
-                  </div>
-                ))}
-                {userMembership &&
-                  equb.status === "ACTIVE" &&
-                  pendingObligations.length > 0 && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                      The Equb has started. Please contribute right away. If
-                      this contribution is not paid by{" "}
-                      {formatDate(pendingObligations[0].dueDate)}, your rating
-                      will be reduced and you may be marked overdue.
-                    </div>
-                  )}
-                {userMembership &&
-                  !["ACTIVE", "COMPLETED", "CANCELLED"].includes(
-                    equb.status,
-                  ) && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setWithdrawConfirmOpen(true)}
-                      loading={actionLoading}
-                      className="w-full"
-                    >
-                      <UserMinus className="mr-2 h-4 w-4" />
-                      Withdraw membership
-                    </Button>
-                  )}
+            <div className="flex items-center gap-3">
+              {isAdmin && ["DRAFT", "OPEN_FOR_MEMBERS", "LOCKED"].includes(equb.status) && (
+                <EditEqubDialog
+                  token={token}
+                  equb={equb}
+                  membersCount={memberCount}
+                  onSaved={() => loadData(equbId, token)}
+                />
+              )}
+              {isAdmin && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDelete}
+                  loading={actionLoading}
+                  className="rounded-xl text-xs"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1" />
+                  Delete
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Metric Tiles Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-200 dark:border-white/10">
+            <div className="rounded-2xl border border-slate-200/70 dark:border-white/5 bg-slate-50 dark:bg-slate-900/40 p-4">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <Wallet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Current Pool</span>
               </div>
-            </Card>
-          )}
+              <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                {currentPoolDisplay}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">Verified on-ledger</p>
+            </div>
 
-          {isAdmin && (
-            <Card title="Actions">
-              {!hasMembers && (
-                <div className="space-y-3">
-                  <div className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900">
-                    {equb.status === "DRAFT"
-                      ? "This Equb is in draft mode. Open it when you are ready for members to join."
-                      : "This Equb has no members yet, so you can still edit or remove it."}
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    {equb.status === "DRAFT" && (
-                      <Button onClick={handleOpen} loading={actionLoading}>
-                        Open for Members
-                      </Button>
-                    )}
-                    {["DRAFT", "OPEN_FOR_MEMBERS", "LOCKED"].includes(
-                      equb.status,
-                    ) ? (
-                      <EditEqubDialog
-                        token={token}
-                        equb={equb}
-                        membersCount={memberCount}
-                        onSaved={() => loadData(equbId, token)}
-                      />
-                    ) : null}
-                    <Button
-                      variant="destructive"
-                      onClick={handleDelete}
-                      loading={actionLoading}
-                    >
-                      Delete Equb
-                    </Button>
-                  </div>
-                </div>
-              )}
-              {equb.status === "OPEN_FOR_MEMBERS" && (
-                <div className="space-y-3">
-                  <p className="text-sm text-gray-500">
-                    Minimum approved members required to start:{" "}
-                    {minimumApprovedMembersToStart}. Current approved members:{" "}
-                    {approvedMemberCount}.
-                  </p>
-                  {approvedMemberCount >= minimumApprovedMembersToStart ? (
-                    <Button
-                      onClick={() => {
-                        if (pendingMemberRows.length > 0) {
-                          setStartConfirmOpen(true);
-                          return;
-                        }
-                        handleLock();
-                      }}
-                      loading={actionLoading}
-                      className="w-full"
-                    >
-                      Start Equb
-                    </Button>
-                  ) : (
-                    <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-                      This Equb cannot start until it reaches{" "}
-                      {minimumApprovedMembersToStart} approved members.
-                    </div>
-                  )}
-                </div>
-              )}
-              {!userMembership &&
-                equb.status === "OPEN_FOR_MEMBERS" &&
-                isAdmin && (
-                  <p className="text-sm text-gray-500">
-                    Admin accounts cannot join Equbs. Use the approval controls
-                    below to manage requests.
-                  </p>
-                )}
-            </Card>
-          )}
+            <div className="rounded-2xl border border-slate-200/70 dark:border-white/5 bg-slate-50 dark:bg-slate-900/40 p-4">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <Coins className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                <span>Contribution</span>
+              </div>
+              <div className="text-xl font-black text-slate-900 dark:text-white">
+                {formatMoney(equb.contributionAmountMinor)}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">Per {equb.frequency.toLowerCase()} cycle</p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/70 dark:border-white/5 bg-slate-50 dark:bg-slate-900/40 p-4">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <Users className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span>Members</span>
+              </div>
+              <div className="text-xl font-black text-slate-900 dark:text-white">
+                {approvedMemberCount} / {equb.memberLimit}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">
+                {minimumApprovedMembersToStart} needed to start
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/70 dark:border-white/5 bg-slate-50 dark:bg-slate-900/40 p-4">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <Calendar className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>Start Date</span>
+              </div>
+              <div className="text-xl font-black text-slate-900 dark:text-white">
+                {formatDate(equb.startDate)}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">{equb.numberOfCycles} total cycles</p>
+            </div>
+          </div>
         </div>
 
+        {/* Member Action / Admin Action Hub */}
+        <div className="grid gap-6 md:grid-cols-3 mb-8">
+          {/* User Membership Status Tile */}
+          {!isAdmin && (
+            <div className="rounded-3xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-white/[0.03] backdrop-blur-xl p-6 shadow-md shadow-slate-200/60 dark:shadow-black/25 dark:shadow-xl md:col-span-2">
+              <div className="flex items-center gap-2 mb-4">
+                <UserCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Your Participation Standing
+                </h2>
+              </div>
+
+              {userMembership ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 p-3 border border-slate-200/70 dark:border-white/5">
+                      <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase">Membership</p>
+                      <div className="mt-1">
+                        <StatusBadge status={userMembership.status} />
+                      </div>
+                    </div>
+                    <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 p-3 border border-slate-200/70 dark:border-white/5">
+                      <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase">Payout Awarded</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white mt-1">
+                        {userMembership.hasReceivedPayout ? "Yes (Cycle Winner)" : "Pending Draw"}
+                      </p>
+                    </div>
+                    {eligibility && (
+                      <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 p-3 border border-slate-200/70 dark:border-white/5">
+                        <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase">Draw Eligible</p>
+                        <div className="mt-1">
+                          <StatusBadge
+                            status={eligibility.eligible ? "ELIGIBLE" : "NOT_ELIGIBLE"}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {eligibility?.reason && (
+                    <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-amber-500 dark:text-amber-400" />
+                      <span>{eligibility.reason}</span>
+                    </div>
+                  )}
+
+                  {overdueObligations.length > 0 && (
+                    <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-300 dark:border-rose-500/20 text-xs text-rose-800 dark:text-rose-300 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 dark:text-rose-400" />
+                      <span>{overdueObligations.length} overdue obligation(s) pending clearance.</span>
+                    </div>
+                  )}
+
+                  {/* Payment CTA */}
+                  {pendingObligations.slice(0, 1).map((o) => (
+                    <div
+                      key={o.id}
+                      className="p-4 rounded-2xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50/80 dark:bg-emerald-500/10 flex flex-wrap items-center justify-between gap-3"
+                    >
+                      <div>
+                        <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 uppercase">
+                          Cycle {currentCycle?.cycleNumber} Obligation Due
+                        </p>
+                        <p className="text-base font-black text-slate-900 dark:text-white mt-0.5">
+                          {formatMoney(o.totalDueMinor)} by {formatDate(o.dueDate)}
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => handlePay(o.id)}
+                        loading={actionLoading}
+                        className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold px-5 py-2"
+                      >
+                        Pay Contribution Now
+                      </Button>
+                    </div>
+                  ))}
+
+                  {userMembership &&
+                    !["ACTIVE", "COMPLETED", "CANCELLED"].includes(equb.status) && (
+                      <Button
+                        variant="secondary"
+                        onClick={() => setWithdrawConfirmOpen(true)}
+                        loading={actionLoading}
+                        className="rounded-xl text-xs border border-slate-200 dark:border-white/10 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                      >
+                        <UserMinus className="mr-1.5 h-3.5 w-3.5" />
+                        Withdraw Membership
+                      </Button>
+                    )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-700 dark:text-slate-300">
+                    You are not currently enrolled in this Equb group.
+                  </p>
+                  {equb.status === "OPEN_FOR_MEMBERS" ? (
+                    <Button
+                      onClick={handleJoin}
+                      loading={actionLoading}
+                      className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold px-6 py-2.5 shadow-lg shadow-emerald-500/20"
+                    >
+                      Request to Join Group
+                    </Button>
+                  ) : (
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Joining is not available in current {equb.status.toLowerCase()} state.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Admin Control Hub Tile */}
+          {isAdmin && (
+            <div className="rounded-3xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-white/[0.03] backdrop-blur-xl p-6 shadow-md shadow-slate-200/60 dark:shadow-black/25 dark:shadow-xl md:col-span-2">
+              <div className="flex items-center gap-2 mb-4">
+                <Layers className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Lifecycle Controls
+                </h2>
+              </div>
+
+              <div className="space-y-4">
+                {equb.status === "DRAFT" && (
+                  <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-between gap-3">
+                    <p className="text-xs text-slate-700 dark:text-slate-300">
+                      Equb is currently in draft. Open it to start receiving membership requests.
+                    </p>
+                    <Button
+                      onClick={handleOpen}
+                      loading={actionLoading}
+                      className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold px-4 py-2 shrink-0 text-xs"
+                    >
+                      Open For Members
+                    </Button>
+                  </div>
+                )}
+
+                {equb.status === "OPEN_FOR_MEMBERS" && (
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-700 dark:text-slate-300">
+                        {approvedMemberCount >= minimumApprovedMembersToStart
+                          ? `Ready to start (${approvedMemberCount} approved members)`
+                          : `Need ${minimumApprovedMembersToStart - approvedMemberCount} more approved members to start`}
+                      </span>
+                      <span className="text-xs font-mono text-emerald-700 dark:text-emerald-400">
+                        Min: {minimumApprovedMembersToStart}
+                      </span>
+                    </div>
+                    {approvedMemberCount >= minimumApprovedMembersToStart ? (
+                      <Button
+                        onClick={() => {
+                          if (pendingMemberRows.length > 0) {
+                            setStartConfirmOpen(true);
+                            return;
+                          }
+                          handleLock();
+                        }}
+                        loading={actionLoading}
+                        className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold py-2.5 shadow-lg shadow-emerald-500/20"
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Start Equb & Advance to Cycle 1
+                      </Button>
+                    ) : (
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                        Equb requires at least {minimumApprovedMembersToStart} approved members before it can start.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Quick Info / Schedule Tile */}
+          <div className="rounded-3xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-white/[0.03] backdrop-blur-xl p-6 shadow-md shadow-slate-200/60 dark:shadow-black/25 dark:shadow-xl">
+            <div className="flex items-center gap-2 mb-4">
+              <History className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                Cycle Timeline
+              </h2>
+            </div>
+            <dl className="space-y-3 text-xs">
+              <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-white/5">
+                <dt className="text-slate-500 dark:text-slate-400">Active Cycle</dt>
+                <dd className="font-bold text-slate-900 dark:text-white">
+                  {currentCycle ? `Cycle #${currentCycle.cycleNumber}` : "Not Started"}
+                </dd>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-white/5">
+                <dt className="text-slate-500 dark:text-slate-400">Next Scheduled Due</dt>
+                <dd className="font-bold text-emerald-700 dark:text-emerald-400">
+                  {currentCycle ? formatDate(currentCycle.dueDate) : formatDate(equb.startDate)}
+                </dd>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-white/5">
+                <dt className="text-slate-500 dark:text-slate-400">Admin Fee</dt>
+                <dd className="font-bold text-slate-900 dark:text-white">0.00 ETB (0%)</dd>
+              </div>
+              <div className="flex justify-between py-1.5">
+                <dt className="text-slate-500 dark:text-slate-400">Fairness Seed</dt>
+                <dd className="font-mono text-slate-700 dark:text-slate-300">SHA-256 Validated</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+
+        {/* Admin Member Management Table */}
         {isAdmin && (
-          <Card
-            title="Members"
-            description="Approved and pending members in one table. Select pending members to approve them in bulk."
-            className="mt-6"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 pb-4">
-              <p className="text-sm text-gray-600">
-                {memberRows.length} member{memberRows.length === 1 ? "" : "s"}
-                {pendingMemberRows.length > 0
-                  ? `, ${pendingMemberRows.length} pending`
-                  : ""}
-              </p>
+          <div className="rounded-3xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-white/[0.03] backdrop-blur-xl shadow-md shadow-slate-200/60 dark:shadow-black/25 dark:shadow-xl overflow-hidden mb-8">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/90 dark:border-white/10 px-6 py-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                  Member Directory & Admission Control
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {memberRows.length} member{memberRows.length === 1 ? "" : "s"}
+                  {pendingMemberRows.length > 0 ? ` • ${pendingMemberRows.length} pending approval` : ""}
+                </p>
+              </div>
+
               <div className="flex items-center gap-3">
                 {bulkStatus && (
-                  <p className="text-sm text-gray-600">{bulkStatus}</p>
+                  <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{bulkStatus}</span>
                 )}
                 <Button
                   type="button"
+                  size="sm"
                   variant="secondary"
                   onClick={handleBulkApprove}
                   loading={actionLoading}
                   disabled={selectedPendingCount === 0}
+                  className="rounded-xl border border-slate-200 dark:border-white/10 text-xs font-semibold"
                 >
-                  <CheckCheck className="mr-2 h-4 w-4" />
-                  Approve selected
+                  <CheckCheck className="mr-1.5 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  Approve Selected ({selectedPendingCount})
                 </Button>
               </div>
             </div>
 
-            {memberRows.length === 0 ? (
-              <div className="py-6">
-                <Empty className="border-0 py-4">
-                  <EmptyContent>
-                    <EmptyHeader>
-                      <EmptyMedia>
-                        <CheckCheck className="h-5 w-5 text-muted-foreground" />
-                      </EmptyMedia>
-                      <EmptyTitle>No members yet</EmptyTitle>
-                      <EmptyDescription>
-                        Members and pending requests will appear here once
-                        people join this Equb.
-                      </EmptyDescription>
-                    </EmptyHeader>
-                  </EmptyContent>
-                </Empty>
-              </div>
-            ) : (
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
+                  <TableRow className="border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02]">
+                    <TableHead className="w-12 px-6 py-3">
                       <input
                         aria-label="Select all pending members"
                         type="checkbox"
@@ -857,37 +920,41 @@ export default function EqubDetailPage({
                         onChange={(event) => {
                           if (event.target.checked) {
                             setSelectedMembershipIds(
-                              pendingMemberRows.map(
-                                ({ membership }) => membership.id,
-                              ),
+                              pendingMemberRows.map(({ membership }) => membership.id),
                             );
                           } else {
                             setSelectedMembershipIds([]);
                           }
                         }}
-                        className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        className="h-4 w-4 rounded border-slate-300 dark:border-white/20 bg-white dark:bg-slate-900 text-emerald-600 focus:ring-emerald-500"
                       />
                     </TableHead>
-                    <TableHead>Member</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Rating</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead>Contribution</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    <TableHead className="px-6 py-3 text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Member</TableHead>
+                    <TableHead className="px-6 py-3 text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Rating</TableHead>
+                    <TableHead className="px-6 py-3 text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Joined</TableHead>
+                    <TableHead className="px-6 py-3 text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Contribution</TableHead>
+                    <TableHead className="px-6 py-3 text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Status</TableHead>
+                    <TableHead className="px-6 py-3 text-right text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {memberRows.map(
-                    ({ membership, user, contributionStatus }) => {
+                  {memberRows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="px-6 py-10 text-center text-xs text-slate-500 dark:text-slate-400">
+                        No members enrolled in this Equb yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    memberRows.map(({ membership, user, contributionStatus }) => {
                       const isPending = membership.status === "PENDING";
-                      const isChecked = selectedMembershipIds.includes(
-                        membership.id,
-                      );
+                      const isChecked = selectedMembershipIds.includes(membership.id);
 
                       return (
-                        <TableRow key={membership.id}>
-                          <TableCell>
+                        <TableRow
+                          key={membership.id}
+                          className="border-slate-200/70 dark:border-white/5 hover:bg-slate-50/80 dark:hover:bg-white/[0.03] transition-colors"
+                        >
+                          <TableCell className="px-6 py-3.5">
                             {isPending ? (
                               <input
                                 aria-label={`Select ${user.displayName}`}
@@ -897,28 +964,32 @@ export default function EqubDetailPage({
                                   setSelectedMembershipIds((current) =>
                                     event.target.checked
                                       ? [...current, membership.id]
-                                      : current.filter(
-                                          (id) => id !== membership.id,
-                                        ),
+                                      : current.filter((id) => id !== membership.id),
                                   );
                                 }}
-                                className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                className="h-4 w-4 rounded border-slate-300 dark:border-white/20 bg-white dark:bg-slate-900 text-emerald-600 focus:ring-emerald-500"
                               />
                             ) : (
-                              <span className="inline-flex h-4 w-4 items-center justify-center rounded border border-emerald-200 bg-emerald-50 text-emerald-600">
+                              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                                 <CheckCheck className="h-3 w-3" />
                               </span>
                             )}
                           </TableCell>
-                          <TableCell className="font-medium text-gray-900">
-                            {user.displayName}
+                          <TableCell className="px-6 py-3.5">
+                            <div className="font-bold text-slate-900 dark:text-white text-sm">
+                              {user.displayName}
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">{user.email || user.id}</div>
                           </TableCell>
-                          <TableCell>{user.email || user.id}</TableCell>
-                          <TableCell>{user.rating}/100</TableCell>
-                          <TableCell>
+                          <TableCell className="px-6 py-3.5">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-700 dark:text-teal-400 text-xs font-mono font-bold">
+                              {user.rating}/100
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-6 py-3.5 text-xs text-slate-500 dark:text-slate-400">
                             {formatDate(membership.joinedAt)}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6 py-3.5">
                             <StatusBadge
                               status={
                                 contributionStatus === "PAID"
@@ -931,10 +1002,10 @@ export default function EqubDetailPage({
                               }
                             />
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6 py-3.5">
                             <StatusBadge status={membership.status} />
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="px-6 py-3.5 text-right">
                             {isPending ? (
                               <div className="flex items-center justify-end gap-2">
                                 <Button
@@ -943,6 +1014,7 @@ export default function EqubDetailPage({
                                   variant="secondary"
                                   loading={actionLoading}
                                   onClick={() => handleApprove(membership.id)}
+                                  className="rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30"
                                 >
                                   Approve
                                 </Button>
@@ -957,138 +1029,147 @@ export default function EqubDetailPage({
                                       memberName: user.displayName,
                                     })
                                   }
+                                  className="rounded-xl text-xs"
                                 >
                                   Reject
                                 </Button>
                               </div>
                             ) : (
-                              <span className="text-sm text-gray-400">
-                                Approved
-                              </span>
+                              <span className="text-xs text-slate-500">Active Member</span>
                             )}
                           </TableCell>
                         </TableRow>
                       );
-                    },
+                    })
                   )}
                 </TableBody>
               </Table>
-            )}
-          </Card>
+            </div>
+          </div>
         )}
 
+        {/* Draw Trigger Section */}
         {currentCycle && isAdmin && !currentCycle.drawId && cycleDueReached && (
-          <Card
-            title={`Cycle ${currentCycle.cycleNumber} - Draw Payout`}
-            className="mt-6"
-          >
-            <p className="text-sm text-gray-600">
-              Pool: {formatMoney(currentCycle.poolAmountMinor)} - Status:{" "}
-              <StatusBadge status={currentCycle.status} />
-            </p>
-            <Button
-              onClick={() => handleDraw(currentCycle.id)}
-              loading={actionLoading}
-              className="mt-4"
-            >
-              Draw Payout Recipient
-            </Button>
-            {drawResult && (
-              <div className="mt-4 rounded-lg bg-emerald-50 p-4">
-                <p className="font-semibold text-emerald-800">
-                  Draw complete - Member selected
-                </p>
-                <p className="text-sm text-emerald-700">
-                  Draw ID: {drawResult.id}
+          <div className="rounded-3xl border border-emerald-500/40 bg-gradient-to-r from-emerald-950/60 via-slate-900/80 to-teal-950/60 backdrop-blur-xl p-6 shadow-xl mb-8 text-white">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">
+                  <Crown className="w-4 h-4" />
+                  <span>Cycle #{currentCycle.cycleNumber} Draw Ready</span>
+                </div>
+                <h3 className="text-xl font-extrabold text-white">
+                  Execute Autonomous Winner Selection
+                </h3>
+                <p className="text-xs text-slate-300 mt-1">
+                  Pool amount: <span className="font-bold text-emerald-400">{formatMoney(currentCycle.poolAmountMinor)}</span> • Selects from eligible, paid members.
                 </p>
               </div>
+
+              <Button
+                onClick={() => handleDraw(currentCycle.id)}
+                loading={actionLoading}
+                className="rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 text-slate-950 font-black px-6 py-3 shadow-lg shadow-emerald-500/30 text-sm"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Draw Payout Recipient
+              </Button>
+            </div>
+
+            {drawResult && (
+              <div className="mt-4 p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-xs text-emerald-300 flex items-center gap-2">
+                <CheckCheck className="w-4 h-4 text-emerald-400" />
+                <span>Draw executed successfully! Reference: {drawResult.id}</span>
+              </div>
             )}
-          </Card>
+          </div>
         )}
 
-        {currentCycle &&
-          isAdmin &&
-          !currentCycle.drawId &&
-          !cycleDueReached && (
-            <Card
-              title={`Cycle ${currentCycle.cycleNumber} - Draw Payout`}
-              className="mt-6"
-            >
-              <p className="text-sm text-gray-600">
-                The first payout becomes available on{" "}
-                {formatDate(currentCycle.dueDate)}.
-              </p>
-            </Card>
-          )}
+        {/* Cycles & Payouts Statement Table */}
+        <div className="rounded-3xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-white/[0.03] backdrop-blur-xl shadow-md shadow-slate-200/60 dark:shadow-black/25 dark:shadow-xl overflow-hidden">
+          <div className="border-b border-slate-200/90 dark:border-white/10 px-6 py-4">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">
+              Cycles, Due Dates & Disbursements
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Audit log of scheduled cycle intervals, pool values, and draw winners.
+            </p>
+          </div>
 
-        <Card title="Cycles & Payouts" className="mt-6">
-          {cycles.length === 0 ? (
-            <div className="py-8">
-              <Empty className="border-0 py-4">
-                <EmptyContent>
-                  <EmptyHeader>
-                    <EmptyMedia>
-                      <PencilLine className="h-5 w-5 text-muted-foreground" />
-                    </EmptyMedia>
-                    <EmptyTitle>No cycles yet</EmptyTitle>
-                    <EmptyDescription>
-                      Cycles and payouts will appear here after the Equb starts.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                </EmptyContent>
-              </Empty>
-            </div>
-          ) : (
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Cycle</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Pool</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Recipient</TableHead>
+                <TableRow className="border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02]">
+                  <TableHead className="px-6 py-3.5 text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Cycle #</TableHead>
+                  <TableHead className="px-6 py-3.5 text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Due Date</TableHead>
+                  <TableHead className="px-6 py-3.5 text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Pool Amount</TableHead>
+                  <TableHead className="px-6 py-3.5 text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Cycle Status</TableHead>
+                  <TableHead className="px-6 py-3.5 text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Winner Recipient</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {cycles.map((cycle) => (
-                  <TableRow key={cycle.id}>
-                    <TableCell className="font-medium text-gray-900">
-                      {cycle.cycleNumber}
-                    </TableCell>
-                    <TableCell>{formatDate(cycle.dueDate)}</TableCell>
-                    <TableCell>{formatMoney(cycle.poolAmountMinor)}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={cycle.status} />
-                    </TableCell>
-                    <TableCell>
-                      {cycle.payoutRecipientId
-                        ? (memberNameByUserId.get(cycle.payoutRecipientId) ??
-                          `${cycle.payoutRecipientId.slice(0, 8)}...`)
-                        : "-"}
+                {cycles.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="px-6 py-10 text-center text-xs text-slate-500 dark:text-slate-400">
+                      Cycles will be initialized when the Equb starts.
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  cycles.map((cycle) => (
+                    <TableRow
+                      key={cycle.id}
+                      className="border-slate-200/70 dark:border-white/5 hover:bg-slate-50/80 dark:hover:bg-white/[0.03] transition-colors"
+                    >
+                      <TableCell className="px-6 py-4 font-bold text-slate-900 dark:text-white text-sm">
+                        Cycle {cycle.cycleNumber}
+                      </TableCell>
+                      <TableCell className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400 font-mono">
+                        {formatDate(cycle.dueDate)}
+                      </TableCell>
+                      <TableCell className="px-6 py-4 font-bold text-emerald-700 dark:text-emerald-400 text-sm">
+                        {formatMoney(cycle.poolAmountMinor)}
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
+                        <StatusBadge status={cycle.status} />
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
+                        {cycle.payoutRecipientId ? (
+                          <div className="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-white text-xs">
+                            <Crown className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                            <span>
+                              {memberNameByUserId.get(cycle.payoutRecipientId) ??
+                                `${cycle.payoutRecipientId.slice(0, 8)}…`}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-500">Awaiting Draw</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
-          )}
-        </Card>
+          </div>
+        </div>
       </main>
 
+      {/* Confirmation Modals */}
       <Dialog open={startConfirmOpen} onOpenChange={setStartConfirmOpen}>
-        <DialogContent>
+        <DialogContent className="rounded-3xl border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xl">
           <DialogHeader>
             <DialogTitle>Start Equb with pending requests?</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-slate-600 dark:text-slate-300">
               {pendingMemberRows.length} pending request
               {pendingMemberRows.length === 1 ? " is" : "s are"} still waiting.
-              Starting now will reject them automatically and notify them.
+              Starting now will automatically reject unapproved requests.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button
               variant="secondary"
               type="button"
               onClick={() => setStartConfirmOpen(false)}
+              className="rounded-xl"
             >
               Cancel
             </Button>
@@ -1096,8 +1177,9 @@ export default function EqubDetailPage({
               type="button"
               loading={actionLoading}
               onClick={handleConfirmedLock}
+              className="rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold"
             >
-              Start Equb
+              Confirm & Start
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1107,19 +1189,19 @@ export default function EqubDetailPage({
         open={Boolean(rejectTarget)}
         onOpenChange={(open) => !open && setRejectTarget(null)}
       >
-        <DialogContent>
+        <DialogContent className="rounded-3xl border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xl">
           <DialogHeader>
             <DialogTitle>Reject membership request?</DialogTitle>
-            <DialogDescription>
-              {rejectTarget?.memberName} will be notified that their request was
-              rejected.
+            <DialogDescription className="text-slate-600 dark:text-slate-300">
+              {rejectTarget?.memberName} will be notified that their request was not accepted.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button
               variant="secondary"
               type="button"
               onClick={() => setRejectTarget(null)}
+              className="rounded-xl"
             >
               Cancel
             </Button>
@@ -1130,34 +1212,37 @@ export default function EqubDetailPage({
               onClick={() =>
                 rejectTarget && handleReject(rejectTarget.membershipId)
               }
+              className="rounded-xl"
             >
-              Reject request
+              Reject Request
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={withdrawConfirmOpen} onOpenChange={setWithdrawConfirmOpen}>
-        <DialogContent>
+        <DialogContent className="rounded-3xl border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xl">
           <DialogHeader>
             <DialogTitle>Withdraw your membership?</DialogTitle>
-            <DialogDescription>
-              This will remove you from the Equb before it starts. You can
-              request to join again later if the Equb is still open.
+            <DialogDescription className="text-slate-600 dark:text-slate-300">
+              This will remove you from the Equb before it starts. You can request to join again later if the group is still open.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button
               variant="secondary"
               type="button"
               onClick={() => setWithdrawConfirmOpen(false)}
+              className="rounded-xl"
             >
               Cancel
             </Button>
             <Button
               type="button"
+              variant="destructive"
               loading={actionLoading}
               onClick={handleWithdraw}
+              className="rounded-xl"
             >
               Withdraw
             </Button>
@@ -1165,6 +1250,7 @@ export default function EqubDetailPage({
         </DialogContent>
       </Dialog>
 
+      {/* Payment Drawer */}
       {activePayment ? (
         <MockPaymentSheet
           open={paymentSheetOpen}

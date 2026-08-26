@@ -29,7 +29,7 @@ export function HomeNavbar() {
         });
         if (res.ok) {
           const { profile } = (await res.json()) as { profile: UserProfile };
-          setSearchHref(profile.role === "ADMIN" ? "/equbs" : "/search");
+          setSearchHref("/search");
           setIsAdmin(profile.role === "ADMIN");
         } else {
           setSearchHref("/search");

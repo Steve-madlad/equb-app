@@ -32,11 +32,15 @@ import {
   FileClock,
   LayoutDashboard,
   LogOut,
+  Moon,
   Search,
+  Sun,
+  Wallet,
   WalletCards,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
 import { ComponentType, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -67,6 +71,37 @@ function getInitials(name?: string) {
     .join("");
 }
 
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <button className="h-9 w-9 rounded-xl border border-white/10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:border-emerald-500/40 hover:text-emerald-500" aria-label="Toggle theme">
+        <span className="w-4 h-4 rounded-full" />
+      </button>
+    );
+  }
+
+  const isDark = theme === "dark";
+
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      className="h-9 w-9 cursor rounded-xl border border-slate-200/60 dark:border-white/10 border-slate-200/60 bg-slate-50 dark:bg-white/5 hover:border-emerald-500/40! hover:text-emerald-500! hover:bg-white/10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-emerald-400 transition-all duration-200"
+    >
+      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+    </button>
+  );
+}
+
 function TestDateDialog() {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(getTodayIsoDate());
@@ -85,7 +120,7 @@ function TestDateDialog() {
           type="button"
           variant="secondary"
           size="icon"
-          className="h-10 w-10"
+          className="h-9 w-9 rounded-xl border border-slate-200/60 bg-slate-50 dark:border-white/15 dark:bg-white/5 hover:bg-white/10! text-slate-500 dark:text-slate-400 hover:border-emerald-500/40! hover:text-emerald-500! transition-all"
           aria-label="Set test date"
           title={activeDate ? `Test date: ${activeDate}` : "Set test date"}
         >
@@ -99,7 +134,6 @@ function TestDateDialog() {
             Temporarily make the app behave as if today is the date you choose.
           </DialogDescription>
         </DialogHeader>
-
         <div className="space-y-2">
           <label className="text-sm font-medium">Date</label>
           <Input
@@ -107,11 +141,10 @@ function TestDateDialog() {
             value={value}
             onChange={(event) => setValue(event.target.value)}
           />
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             Current override: {activeDate ?? "Using the real date"}
           </p>
         </div>
-
         <DialogFooter>
           <Button
             type="button"
@@ -134,7 +167,6 @@ function TestDateDialog() {
                 toast.error("Pick a date first");
                 return;
               }
-
               setBrowserTestDate(value);
               setActiveDate(value);
               setOpen(false);
@@ -166,59 +198,72 @@ export function Navbar({
   const showAuditLogs = authenticated && isAdmin;
 
   return (
-    <nav className="border-b border-gray-200 bg-white">
+    <nav className="sticky top-0 z-50 border-b border-white/10 dark:border-white/10 border-slate-200/60 bg-white/85 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm shadow-black/5">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <div className="flex min-w-0 items-center gap-6">
-          <Link href="/" className="text-xl font-bold text-emerald-700 mr-5">
-            እቁብ Equb
+        {/* Logo + Nav Links */}
+        <div className="flex min-w-0 items-center gap-5">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-lg font-extrabold text-slate-900 dark:text-white tracking-tight mr-2 shrink-0"
+          >
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-sm">
+              <Wallet className="w-4 h-4" />
+            </span>
+            <span className="hidden sm:inline">Equb</span>
           </Link>
 
-          <div className="flex gap-2">
+          <div className="hidden md:flex items-center gap-1">
             {authenticated && (
               <Link
                 href="/dashboard"
-                className="flex-center gap-2 py-1 px-2 rounded-lg text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900"
-                aria-label="Dashboard"
-                title="Dashboard"
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
+                  pathname === "/dashboard"
+                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                    : "text-slate-600 dark:text-slate-300 hover:bg-white/10 hover:text-slate-900 dark:hover:text-white"
+                )}
               >
-                <LayoutDashboard className="size-4!" />
+                <LayoutDashboard className="w-4 h-4" />
                 Dashboard
               </Link>
             )}
-            {authenticated && showAuditLogs && (
+            {showAuditLogs && (
               <Link
                 href="/admin/audit"
-                className="flex-center gap-2 py-1 px-2 rounded-lg text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900"
-                aria-label="Audit logs"
-                title="Audit logs"
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
+                  pathname === "/admin/audit"
+                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                    : "text-slate-600 dark:text-slate-300 hover:bg-white/10 hover:text-slate-900 dark:hover:text-white"
+                )}
               >
-                <FileClock className="h-4 w-4" />
-                Audit logs
+                <FileClock className="w-4 h-4" />
+                Audit Logs
               </Link>
             )}
             {authenticated && !isAdmin && (
               <Link
                 href="/financial-activities"
-                className="flex-center gap-2 py-1 px-2 rounded-lg text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900"
-                aria-label="Financial activities"
-                title="Financial activities"
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
+                  pathname === "/financial-activities"
+                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                    : "text-slate-600 dark:text-slate-300 hover:bg-white/10 hover:text-slate-900 dark:hover:text-white"
+                )}
               >
-                <WalletCards className="h-4 w-4" />
-                Financial activities
+                <WalletCards className="w-4 h-4" />
+                Finances
               </Link>
             )}
-          </div>
-
-          <div className="hidden items-center gap-1 md:flex">
             {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
                   pathname === link.href || pathname.startsWith(link.href + "/")
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                    : "text-slate-600 dark:text-slate-300 hover:bg-white/10 hover:text-slate-900 dark:hover:text-white"
                 )}
               >
                 {link.label}
@@ -228,55 +273,62 @@ export function Navbar({
           </div>
         </div>
 
+        {/* Right Actions */}
         <div className="flex items-center gap-2">
-          {authenticated && process.env.NODE_ENV !== "production" ? (
+          {/* Dev only: test date */}
+          {authenticated && process.env.NODE_ENV !== "production" && (
             <TestDateDialog />
-          ) : null}
+          )}
 
+          {/* Theme toggle */}
+          <ThemeToggle />
+
+          {/* Search */}
           {authenticated && searchHref && (
             <Link
               href={searchHref}
-              className="inline-flex max-w-[min(18rem,48vw)] items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-white hover:text-gray-900"
+              className="hidden sm:inline-flex max-w-[min(14rem,40vw)] items-center gap-2 rounded-xl border border-slate-200/60 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3.5 py-2 text-sm font-medium text-slate-500 dark:text-slate-400 transition-all hover:border-emerald-500/40 hover:text-emerald-600 dark:hover:text-emerald-400"
             >
-              <Search className="h-4 w-4" />
+              <Search className="h-4 w-4 shrink-0" />
               <span className="truncate">{searchLabel}</span>
             </Link>
           )}
 
+          {/* Notifications bell */}
           {authenticated && notificationsHref && (
             <Link
               href={notificationsHref}
               aria-label="Notifications"
               title="Notifications"
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900"
+              className="relative hover:bg-white/10! inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200/60 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 hover:border-emerald-500/40! hover:text-emerald-500! transition-all"
             >
               <Bell className="h-4 w-4" />
-              {typeof notificationCount === "number" &&
-                notificationCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-5 justify-center rounded-full bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
-                    {notificationCount > 99 ? "99+" : notificationCount}
-                  </span>
-                )}
+              {typeof notificationCount === "number" && notificationCount > 0 && (
+                <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm">
+                  {notificationCount > 99 ? "99+" : notificationCount}
+                </span>
+              )}
             </Link>
           )}
 
+          {/* User profile dropdown */}
           {authenticated && (
             <DropdownMenu>
               <DropdownMenuTrigger
-                aria-label="Profile menuu"
+                aria-label="Profile menu"
                 title={userName}
                 className="px-0"
               >
                 <Avatar size="lg">
-                  <AvatarFallback className="rounded-lg px-0! bg-emerald-600 text-white">
+                  <AvatarFallback className="rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold text-sm px-0!">
                     {getInitials(userName)}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-36">
-                <DropdownMenuLabel className="flex items-center justify-start gap-2 text-sm">
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel className="flex items-center gap-2 text-sm">
                   <Avatar size="lg" className="h-8 w-8">
-                    <AvatarFallback className="rounded-full bg-emerald-600 text-white">
+                    <AvatarFallback className="rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white text-xs font-bold">
                       {getInitials(userName)}
                     </AvatarFallback>
                   </Avatar>
@@ -284,29 +336,23 @@ export function Navbar({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {showDashboard && (
-                  <DropdownMenuItem
-                    onClick={() => {
-                      window.location.href = "/dashboard";
-                    }}
-                  >
+                  <DropdownMenuItem onClick={() => { window.location.href = "/dashboard"; }}>
                     <LayoutDashboard className="h-4 w-4" />
                     Dashboard
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem
-                  onClick={() => {
-                    window.location.href = "/notifications";
-                  }}
-                >
+                <DropdownMenuItem onClick={() => { window.location.href = "/notifications"; }}>
                   <Bell className="h-4 w-4" />
                   Notifications
                 </DropdownMenuItem>
+                {authenticated && !isAdmin && (
+                  <DropdownMenuItem onClick={() => { window.location.href = "/financial-activities"; }}>
+                    <WalletCards className="h-4 w-4" />
+                    Finances
+                  </DropdownMenuItem>
+                )}
                 {showAuditLogs && (
-                  <DropdownMenuItem
-                    onClick={() => {
-                      window.location.href = "/admin/audit";
-                    }}
-                  >
+                  <DropdownMenuItem onClick={() => { window.location.href = "/admin/audit"; }}>
                     <FileClock className="h-4 w-4" />
                     Audit Logs
                   </DropdownMenuItem>
@@ -314,7 +360,7 @@ export function Navbar({
                 {onSignOut && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={onSignOut}>
+                    <DropdownMenuItem onClick={onSignOut} className="text-red-500 dark:text-red-400 focus:text-red-500">
                       <LogOut className="h-4 w-4" />
                       Sign out
                     </DropdownMenuItem>
@@ -324,21 +370,22 @@ export function Navbar({
             </DropdownMenu>
           )}
 
+          {/* Unauthenticated CTAs */}
           {!authenticated && (
-            <>
+            <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                className="rounded-xl px-3.5 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
               >
                 Sign in
               </Link>
               <Link
                 href="/register"
-                className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+                className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500 transition-all"
               >
                 Get started
               </Link>
-            </>
+            </div>
           )}
         </div>
       </div>

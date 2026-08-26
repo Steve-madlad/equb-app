@@ -5,7 +5,19 @@ import Link from "next/link";
 import { createUserWithEmailAndPassword, onIdTokenChanged } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/Button";
-import { Building2, CreditCard, Lock, Mail, ShieldCheck, User, UserCheck, Wallet } from "lucide-react";
+import {
+  Building2,
+  CreditCard,
+  Lock,
+  Mail,
+  Moon,
+  ShieldCheck,
+  Sun,
+  User,
+  UserCheck,
+  Wallet,
+} from "lucide-react";
+import { useTheme } from "next-themes";
 import type { SupportedBank } from "@/lib/services/chapaTransferService";
 
 const DEFAULT_BANKS: SupportedBank[] = [
@@ -20,6 +32,31 @@ const DEFAULT_BANKS: SupportedBank[] = [
   { id: "amhara", name: "Amhara Bank", code: "amhara" },
   { id: "enat", name: "Enat Bank", code: "enat" },
 ];
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  const isDark = theme === "dark";
+
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      className="h-9 w-9 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all shadow-sm"
+    >
+      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+    </button>
+  );
+}
 
 export default function RegisterPage() {
   const [displayName, setDisplayName] = useState("");
@@ -42,7 +79,6 @@ export default function RegisterPage() {
       }
     });
 
-    // Fetch dynamic Chapa supported banks list
     fetch("/api/banks")
       .then((res) => res.json())
       .then((data) => {
@@ -60,7 +96,6 @@ export default function RegisterPage() {
     return unsub;
   }, [selectedBankCode]);
 
-  // Auto-fill account name if user hasn't typed a custom one yet
   const handleNameChange = (val: string) => {
     setDisplayName(val);
     if (!accountName || accountName === displayName) {
@@ -131,40 +166,60 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 px-4 py-12">
-      {/* Subtle background glow circles */}
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-600/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-teal-600/15 rounded-full blur-3xl pointer-events-none" />
+    <div className="relative min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 px-4 py-12 transition-colors duration-300">
+      {/* Top Bar with Logo link & Theme Toggle */}
+      <div className="absolute top-6 left-6 right-6 flex items-center justify-between max-w-5xl mx-auto">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-white"
+        >
+          <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-500 text-white">
+            <Wallet className="w-3.5 h-3.5" />
+          </span>
+          <span>Equb</span>
+        </Link>
+        <ThemeToggle />
+      </div>
 
-      <div className="relative w-full max-w-xl">
+      {/* Subtle background glow circles (dark mode only) */}
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-600/15 rounded-full blur-3xl pointer-events-none opacity-0 dark:opacity-100" />
+      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-teal-600/15 rounded-full blur-3xl pointer-events-none opacity-0 dark:opacity-100" />
+
+      <div className="relative w-full max-w-xl mt-6">
         {/* Header Branding */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-500/20 mb-3">
             <Wallet className="w-7 h-7" />
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Create your Equb Account</h1>
-          <p className="text-slate-400 text-sm mt-1">Join trusted rotating savings groups across Ethiopia</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            Create your Equb Account
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+            Join trusted rotating savings groups across Ethiopia
+          </p>
         </div>
 
-        {/* Card Container with Glassmorphism */}
-        <div className="rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-2xl p-8 sm:p-10 text-slate-100">
+        {/* Card Container */}
+        <div className="rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/[0.04] backdrop-blur-xl shadow-xl dark:shadow-2xl p-8 sm:p-10 text-slate-900 dark:text-slate-100 transition-all">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="flex items-center gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
-                <ShieldCheck className="w-5 h-5 flex-shrink-0 text-red-400" />
+              <div className="flex items-center gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">
+                <ShieldCheck className="w-5 h-5 flex-shrink-0 text-red-500 dark:text-red-400" />
                 <span>{error}</span>
               </div>
             )}
 
             {/* Section 1: Account Credentials */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
                 <UserCheck className="w-4 h-4" />
                 <span>Personal Credentials</span>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Full Name</label>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                  Full Name
+                </label>
                 <div className="relative">
                   <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
@@ -173,14 +228,16 @@ export default function RegisterPage() {
                     onChange={(e) => handleNameChange(e.target.value)}
                     placeholder="e.g. Abebe Bikila"
                     required
-                    className="w-full rounded-xl border border-white/10 bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Email Address</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                    Email Address
+                  </label>
                   <div className="relative">
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
@@ -189,13 +246,15 @@ export default function RegisterPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
                       required
-                      className="w-full rounded-xl border border-white/10 bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Password</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                    Password
+                  </label>
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
@@ -205,27 +264,27 @@ export default function RegisterPage() {
                       placeholder="••••••••"
                       required
                       minLength={6}
-                      className="w-full rounded-xl border border-white/10 bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="h-px bg-white/10 my-6" />
+            <div className="h-px bg-slate-200 dark:bg-white/10 my-6" />
 
             {/* Section 2: Payout & Disbursement Bank Details */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+                <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
                   <Building2 className="w-4 h-4" />
                   <span>Payout Bank / Wallet Details</span>
                 </div>
-                <span className="text-[11px] text-slate-400">For winning disbursements</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">For winning disbursements</span>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                   Payout Destination Bank / Wallet
                 </label>
                 <div className="relative">
@@ -234,10 +293,10 @@ export default function RegisterPage() {
                     value={selectedBankCode}
                     onChange={(e) => setSelectedBankCode(e.target.value)}
                     required
-                    className="w-full rounded-xl border border-white/10 bg-slate-900/80 pl-10 pr-8 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none cursor-pointer"
+                    className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/80 pl-10 pr-8 py-2.5 text-sm text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none cursor-pointer"
                   >
                     {banks.map((bank) => (
-                      <option key={bank.id || bank.code} value={bank.code} className="bg-slate-900 text-white">
+                      <option key={bank.id || bank.code} value={bank.code} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
                         {bank.name}
                       </option>
                     ))}
@@ -250,7 +309,7 @@ export default function RegisterPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                     Account / Phone Number
                   </label>
                   <div className="relative">
@@ -261,13 +320,13 @@ export default function RegisterPage() {
                       onChange={(e) => setAccountNumber(e.target.value)}
                       placeholder="1000... or 09..."
                       required
-                      className="w-full rounded-xl border border-white/10 bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                     Account Holder Full Name
                   </label>
                   <div className="relative">
@@ -278,12 +337,12 @@ export default function RegisterPage() {
                       onChange={(e) => setAccountName(e.target.value)}
                       placeholder="Must match bank record"
                       required
-                      className="w-full rounded-xl border border-white/10 bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     />
                   </div>
                 </div>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 ⚠️ Account name must match your official bank registration to avoid transfer settlement delays.
               </p>
             </div>
@@ -296,9 +355,9 @@ export default function RegisterPage() {
               Complete Registration
             </Button>
 
-            <p className="text-center text-xs text-slate-400 pt-2">
+            <p className="text-center text-xs text-slate-500 dark:text-slate-400 pt-2">
               Already have an account?{" "}
-              <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-medium underline underline-offset-4">
+              <Link href="/login" className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold">
                 Sign in
               </Link>
             </p>

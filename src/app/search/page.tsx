@@ -2,14 +2,6 @@
 
 import { CreateEqubDialog } from "@/components/equbs/CreateEqubDialog";
 import { Navbar } from "@/components/layout/Navbar";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/Card";
 import { EqubLoading } from "@/components/ui/EqubLoading";
 import { Input } from "@/components/ui/Input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -26,6 +18,16 @@ import type { Equb, UserProfile } from "@/lib/domain/types";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { onIdTokenChanged, signOut } from "firebase/auth";
+import {
+  ArrowRight,
+  Calendar,
+  Compass,
+  Filter,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -73,6 +75,7 @@ export default function SearchPage() {
   const [startDateFrom, setStartDateFrom] = useState("");
   const [startDateTo, setStartDateTo] = useState("");
   const [creatorFilter, setCreatorFilter] = useState("ALL");
+  const [showFilters, setShowFilters] = useState(true);
 
   useEffect(() => {
     const unsub = onIdTokenChanged(getFirebaseAuth(), async (user) => {
@@ -81,10 +84,10 @@ export default function SearchPage() {
         return;
       }
 
-      const token = await user.getIdToken();
-      setToken(token);
+      const tok = await user.getIdToken();
+      setToken(tok);
       const profileRes = await fetch("/api/users/profile", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${tok}` },
       });
       let admin = false;
       if (profileRes.ok) {
@@ -94,7 +97,7 @@ export default function SearchPage() {
       }
 
       const res = await fetch("/api/equbs", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${tok}` },
       });
       if (res.ok) {
         const { equbs: e } = await res.json();
@@ -181,12 +184,38 @@ export default function SearchPage() {
     statusFilter,
   ]);
 
+  const resetFilters = () => {
+    setQuery("");
+    setStatusFilter("ALL");
+    setFrequencyFilter("ALL");
+    setSortBy("NEWEST");
+    setStartDateFrom("");
+    setStartDateTo("");
+    setCreatorFilter("ALL");
+    setContributionRange([contributionBounds[0], contributionBounds[1]]);
+  };
+
+  const hasActiveFilters =
+    query !== "" ||
+    statusFilter !== "ALL" ||
+    frequencyFilter !== "ALL" ||
+    sortBy !== "NEWEST" ||
+    startDateFrom !== "" ||
+    startDateTo !== "" ||
+    creatorFilter !== "ALL";
+
   if (loading) {
     return <EqubLoading />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-100/70 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 transition-colors duration-300">
+      {/* Ambient glow (dark mode only) */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10 opacity-0 dark:opacity-100">
+        <div className="absolute top-1/4 right-1/3 w-96 h-96 bg-emerald-600/10 rounded-full blur-[140px]" />
+        <div className="absolute bottom-1/3 left-1/4 w-72 h-72 bg-teal-600/8 rounded-full blur-[120px]" />
+      </div>
+
       <Navbar
         links={[]}
         userName={profile?.displayName}
@@ -197,253 +226,320 @@ export default function SearchPage() {
         }
       />
 
-      <main className="mx-auto max-w-7xl px-4 py-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {profile?.role === "ADMIN" ? "Admin Equbs" : "Search Equbs"}
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              {profile?.role === "ADMIN" ? "Admin Equb Directory" : "Explore Active Equbs"}
             </h1>
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
               {profile?.role === "ADMIN"
-                ? "Search and manage every Equb, including drafts."
-                : "Browse only non-draft Equbs with filters for status and keywords."}
+                ? "Search, audit, and manage every Equb across all statuses."
+                : "Browse vetted rotating savings groups with transparent rules and schedules."}
             </p>
           </div>
-          {profile?.role === "ADMIN" && (
-            <CreateEqubDialog
-              token={token}
-              onCreated={(equbId) => {
-                window.location.href = `/equbs/${equbId}`;
-              }}
-            />
-          )}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-white/[0.04] backdrop-blur-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 shadow-sm dark:shadow-none transition-all"
+            >
+              <SlidersHorizontal className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>{showFilters ? "Hide Filters" : "Show Filters"}</span>
+            </button>
+            {profile?.role === "ADMIN" && (
+              <CreateEqubDialog
+                token={token}
+                onCreated={(equbId) => {
+                  window.location.href = `/equbs/${equbId}`;
+                }}
+              />
+            )}
+          </div>
         </div>
 
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Filters</CardTitle>
-            <CardDescription>
-              Narrow the list by status, schedule, contribution size, and start
-              date.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by name, description, or ID"
-                aria-label="Search Equbs"
-                className="md:col-span-2"
-              />
+        {/* Filter Panel */}
+        {showFilters && (
+          <div className="rounded-3xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-white/[0.03] backdrop-blur-xl p-6 shadow-md shadow-slate-200/60 dark:shadow-black/25 dark:shadow-xl mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                <Filter className="w-4 h-4" />
+                <span>Search & Filter Engine</span>
+              </div>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset All</span>
+                </button>
+              )}
+            </div>
 
-              <Select
-                value={statusFilter}
-                onValueChange={(value) =>
-                  setStatusFilter(value as (typeof STATUS_OPTIONS)[number])
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.filter(
-                    (status) => profile?.role === "ADMIN" || status !== "DRAFT",
-                  ).map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status === "ALL"
-                        ? "All statuses"
-                        : status.replace(/_/g, " ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="md:col-span-2 relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search by group name, description, or ID…"
+                    aria-label="Search Equbs"
+                    className="pl-10 rounded-xl border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white text-sm"
+                  />
+                </div>
 
-              {profile?.role === "ADMIN" && (
-                <Select value={creatorFilter} onValueChange={setCreatorFilter}>
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value) =>
+                    setStatusFilter(value as (typeof STATUS_OPTIONS)[number])
+                  }
+                >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Created by" />
+                    <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL">All creators</SelectItem>
-                    {[
-                      ...new Map(
-                        equbs.map((equb) => [
-                          equb.createdBy,
-                          equb.createdByName ?? equb.createdBy,
-                        ]),
-                      ).entries(),
-                    ]
-                      .sort(([, first], [, second]) =>
-                        first.localeCompare(second),
-                      )
-                      .map(([id, name]) => (
-                        <SelectItem key={id} value={id}>
-                          {name}
-                        </SelectItem>
-                      ))}
+                    {STATUS_OPTIONS.filter(
+                      (status) => profile?.role === "ADMIN" || status !== "DRAFT",
+                    ).map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status === "ALL"
+                          ? "All statuses"
+                          : status.replace(/_/g, " ")}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-              )}
 
-              <Select
-                value={frequencyFilter}
-                onValueChange={(value) =>
-                  setFrequencyFilter(
-                    value as (typeof FREQUENCY_OPTIONS)[number],
-                  )
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All frequencies" />
-                </SelectTrigger>
-                <SelectContent>
-                  {FREQUENCY_OPTIONS.map((frequency) => (
-                    <SelectItem key={frequency} value={frequency}>
-                      {frequency === "ALL"
-                        ? "All frequencies"
-                        : frequency.toLowerCase()}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {profile?.role === "ADMIN" && (
+                  <Select value={creatorFilter} onValueChange={setCreatorFilter}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Created by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">All creators</SelectItem>
+                      {[
+                        ...new Map(
+                          equbs.map((equb) => [
+                            equb.createdBy,
+                            equb.createdByName ?? equb.createdBy,
+                          ]),
+                        ).entries(),
+                      ]
+                        .sort(([, first], [, second]) =>
+                          first.localeCompare(second),
+                        )
+                        .map(([id, name]) => (
+                          <SelectItem key={id} value={id}>
+                            {name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                )}
 
-              <Select
-                value={sortBy}
-                onValueChange={(value) =>
-                  setSortBy(value as (typeof SORT_OPTIONS)[number])
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SORT_OPTIONS.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option
-                        .replace(/_/g, " ")
-                        .toLowerCase()
-                        .replace(/\b\w/g, (char) => char.toUpperCase())}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <Select
+                  value={frequencyFilter}
+                  onValueChange={(value) =>
+                    setFrequencyFilter(
+                      value as (typeof FREQUENCY_OPTIONS)[number],
+                    )
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All frequencies" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FREQUENCY_OPTIONS.map((frequency) => (
+                      <SelectItem key={frequency} value={frequency}>
+                        {frequency === "ALL"
+                          ? "All frequencies"
+                          : frequency.toLowerCase()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <div className="space-y-3 rounded-xl border border-border bg-white p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    Contribution range
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Filter by the contribution amount in ETB.
+                <Select
+                  value={sortBy}
+                  onValueChange={(value) =>
+                    setSortBy(value as (typeof SORT_OPTIONS)[number])
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SORT_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option
+                          .replace(/_/g, " ")
+                          .toLowerCase()
+                          .replace(/\b\w/g, (char) => char.toUpperCase())}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Slider for Contribution Range */}
+              <div className="rounded-2xl border border-slate-200/80 dark:border-white/5 bg-slate-50/90 dark:bg-slate-900/40 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-800 dark:text-white">
+                      Contribution Amount Range (ETB)
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Filter by per-cycle contribution size
+                    </p>
+                  </div>
+                  <p className="text-xs font-bold font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-300 dark:border-emerald-500/20">
+                    {contributionRange[0]} ETB – {contributionRange[1]} ETB
                   </p>
                 </div>
-                <p className="text-sm text-gray-600">
-                  {contributionRange[0]} ETB - {contributionRange[1]} ETB
-                </p>
+                <Slider
+                  value={contributionRange}
+                  onValueChange={(value) =>
+                    setContributionRange([value[0] ?? 0, value[1] ?? 0])
+                  }
+                  min={contributionBounds[0]}
+                  max={Math.max(contributionBounds[1], contributionBounds[0])}
+                  step={100}
+                />
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-500 mt-1">
+                  <span>Min: {contributionBounds[0]} ETB</span>
+                  <span>Max: {Math.max(contributionBounds[1], contributionBounds[0])} ETB</span>
+                </div>
               </div>
-              <Slider
-                value={contributionRange}
-                onValueChange={(value) =>
-                  setContributionRange([value[0] ?? 0, value[1] ?? 0])
-                }
-                min={contributionBounds[0]}
-                max={Math.max(contributionBounds[1], contributionBounds[0])}
-                step={100}
-              />
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>{contributionBounds[0]} ETB</span>
-                <span>
-                  {Math.max(contributionBounds[1], contributionBounds[0])} ETB
-                </span>
+
+              {/* Date Filters */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">Start Date From</label>
+                  <Input
+                    type="date"
+                    value={startDateFrom}
+                    onChange={(event) => setStartDateFrom(event.target.value)}
+                    aria-label="Start date from"
+                    className="rounded-xl border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">Start Date To</label>
+                  <Input
+                    type="date"
+                    value={startDateTo}
+                    onChange={(event) => setStartDateTo(event.target.value)}
+                    aria-label="Start date to"
+                    className="rounded-xl border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white text-sm"
+                  />
+                </div>
               </div>
             </div>
+          </div>
+        )}
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <Input
-                type="date"
-                value={startDateFrom}
-                onChange={(event) => setStartDateFrom(event.target.value)}
-                aria-label="Start date from"
-              />
-              <Input
-                type="date"
-                value={startDateTo}
-                onChange={(event) => setStartDateTo(event.target.value)}
-                aria-label="Start date to"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Results Bar */}
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+            Showing <span className="font-bold text-slate-900 dark:text-white">{filteredEqubs.length}</span> matching Equbs
+          </p>
+        </div>
 
-        <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {filteredEqubs.map((equb) => (
-            <Link
-              key={equb.id}
-              href={`/equbs/${equb.id}`}
-              className="block h-full"
-            >
-              <Card className="h-full overflow-hidden transition-shadow hover:shadow-md">
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 space-y-2">
-                      <CardTitle className="truncate">{equb.name}</CardTitle>
-                      <CardDescription className="line-clamp-3">
+        {/* Card Grid */}
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {filteredEqubs.map((equb) => {
+            const memberPercent = equb.memberLimit
+              ? Math.min(100, Math.round(((equb.activeMemberCount ?? 0) / equb.memberLimit) * 100))
+              : 0;
+
+            return (
+              <Link
+                key={equb.id}
+                href={`/equbs/${equb.id}`}
+                className="block h-full"
+              >
+                <div className="group relative h-full rounded-3xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-white/[0.03] backdrop-blur-xl p-5 shadow-md shadow-slate-200/70 dark:shadow-none transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-300/60 dark:hover:shadow-black/20 dark:hover:bg-white/[0.06] flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                        {equb.frequency}
+                      </span>
+                      <StatusBadge status={equb.status} />
+                    </div>
+
+                    <h3 className="font-bold text-slate-900 dark:text-white truncate text-sm">
+                      {equb.name}
+                    </h3>
+                    {equb.description && (
+                      <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mt-1 leading-relaxed">
                         {equb.description}
-                      </CardDescription>
+                      </p>
+                    )}
+
+                    <dl className="grid grid-cols-2 gap-2 mt-4 text-xs">
+                      <div className="rounded-xl bg-slate-50 dark:bg-slate-900/40 p-2.5 border border-slate-200/70 dark:border-white/5">
+                        <dt className="text-slate-500 dark:text-slate-500 text-[10px] uppercase font-medium">Contribution</dt>
+                        <dd className="font-bold text-slate-900 dark:text-white text-sm mt-0.5">
+                          {formatMoney(equb.contributionAmountMinor)}
+                        </dd>
+                      </div>
+                      <div className="rounded-xl bg-slate-50 dark:bg-slate-900/40 p-2.5 border border-slate-200/70 dark:border-white/5">
+                        <dt className="text-slate-500 dark:text-slate-500 text-[10px] uppercase font-medium">Cycles</dt>
+                        <dd className="font-bold text-slate-900 dark:text-white text-sm mt-0.5">
+                          {equb.numberOfCycles}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-1">
+                        <span className="font-medium">Members</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-300">
+                          {equb.activeMemberCount ?? 0}/{equb.memberLimit}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-900/60 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
+                          style={{ width: `${memberPercent}%` }}
+                        />
+                      </div>
                     </div>
-                    <StatusBadge status={equb.status} />
                   </div>
-                </CardHeader>
 
-                <CardContent className="space-y-4">
-                  <dl className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <dt className="text-gray-500">Members</dt>
-                      <dd className="font-medium text-gray-900">
-                        {equb.activeMemberCount ?? 0}/{equb.memberLimit}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-gray-500">Contribution</dt>
-                      <dd className="font-medium text-gray-900">
-                        {formatMoney(equb.contributionAmountMinor)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-gray-500">Cycles</dt>
-                      <dd className="font-medium text-gray-900">
-                        {equb.numberOfCycles}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-gray-500">Created</dt>
-                      <dd className="font-medium text-gray-900">
-                        {formatDateTime(equb.createdAt)}
-                      </dd>
-                    </div>
-                  </dl>
-                </CardContent>
-
-                <CardFooter className="justify-between text-xs text-gray-500">
-                  <span>{equb.frequency.toLowerCase()}</span>
-                  <span>{formatDate(equb.startDate)}</span>
-                </CardFooter>
-              </Card>
-            </Link>
-          ))}
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 dark:border-white/5 text-[11px] text-slate-500 dark:text-slate-400">
+                    <span>Starts {formatDate(equb.startDate)}</span>
+                    <span className="flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 font-semibold group-hover:translate-x-0.5 transition-transform">
+                      View Group <ArrowRight className="w-3 h-3" />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
 
         {filteredEqubs.length === 0 && (
-          <Card className="mt-6">
-            <CardContent className="pt-6">
-              <p className="text-sm text-gray-500">
-                No Equbs matched your search.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/[0.03] backdrop-blur-xl p-12 text-center shadow-md dark:shadow-none">
+            <Compass className="h-10 w-10 text-slate-400 dark:text-slate-500 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-300">
+              No Equbs matched your filters
+            </p>
+            <p className="text-xs text-slate-500 mt-1 mb-4">
+              Try broadening your search terms or adjusting the contribution range.
+            </p>
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-semibold shadow-sm"
+            >
+              Clear Filters
+            </button>
+          </div>
         )}
       </main>
     </div>

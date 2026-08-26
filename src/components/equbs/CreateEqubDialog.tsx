@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getBrowserTestDate, getTodayIsoDate } from "@/lib/testClock";
-import { Plus } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -73,7 +73,7 @@ export function CreateEqubDialog({
     if (res.ok) {
       const { equb } = await res.json();
       setOpen(false);
-      toast.success("Equb created");
+      toast.success("Equb created successfully!");
       onCreated(equb.id);
     } else {
       const body = await res.json().catch(() => null);
@@ -88,29 +88,40 @@ export function CreateEqubDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button">
-          <Plus className="mr-2 size-4" />
+        <Button
+          type="button"
+          className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold shadow-lg shadow-emerald-500/20 text-xs px-4 py-2"
+        >
+          <Plus className="mr-1.5 size-4" />
           Create Equb
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl rounded-3xl border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xl">
         <DialogHeader>
-          <DialogTitle>Create Equb</DialogTitle>
-          <DialogDescription>
-            Create a new rotating savings group from the dashboard.
+          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">
+            <Sparkles className="w-4 h-4" />
+            <span>New Rotating Savings Group</span>
+          </div>
+          <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-white">
+            Launch an Equb
+          </DialogTitle>
+          <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+            Configure group rules, contribution amounts, frequency, and member thresholds.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+          {error && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-600 dark:text-red-300">
               {error}
             </div>
-          ) : null}
+          )}
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-medium">Name</label>
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Group Name
+              </label>
               <Input
                 value={form.name}
                 onChange={(event) =>
@@ -120,11 +131,15 @@ export function CreateEqubDialog({
                   }))
                 }
                 required
-                placeholder="Name the group"
+                placeholder="e.g. Bole Entrepreneurs Monthly Equb"
+                className="rounded-xl border-slate-300 dark:border-white/10 bg-white dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm"
               />
             </div>
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-medium">Description</label>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Description & Purpose
+              </label>
               <textarea
                 value={form.description}
                 onChange={(event) =>
@@ -133,12 +148,15 @@ export function CreateEqubDialog({
                     description: event.target.value,
                   }))
                 }
-                className="min-h-28 w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/50"
-                placeholder="Short details about the Equb"
+                className="min-h-20 w-full rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                placeholder="Details on member eligibility, rules, and purpose…"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Contribution (ETB)</label>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Contribution per Cycle (ETB)
+              </label>
               <Input
                 type="number"
                 min="1"
@@ -150,10 +168,14 @@ export function CreateEqubDialog({
                   }))
                 }
                 required
+                className="rounded-xl border-slate-300 dark:border-white/10 bg-white dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Frequency</label>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Cycle Frequency
+              </label>
               <Select
                 value={form.frequency}
                 onValueChange={(value) =>
@@ -164,7 +186,7 @@ export function CreateEqubDialog({
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Choose a frequency" />
+                  <SelectValue placeholder="Choose frequency" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="WEEKLY">Weekly</SelectItem>
@@ -172,8 +194,11 @@ export function CreateEqubDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Member limit</label>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Member Limit
+              </label>
               <Input
                 type="number"
                 min="2"
@@ -190,11 +215,13 @@ export function CreateEqubDialog({
                   }));
                 }}
                 required
+                className="rounded-xl border-slate-300 dark:border-white/10 bg-white dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Minimum members to start
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Min Members to Start
               </label>
               <Input
                 type="number"
@@ -208,10 +235,14 @@ export function CreateEqubDialog({
                   }))
                 }
                 required
+                className="rounded-xl border-slate-300 dark:border-white/10 bg-white dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm"
               />
             </div>
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-medium">Start date</label>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Equb Start Date
+              </label>
               <Input
                 type="date"
                 value={form.startDate}
@@ -222,20 +253,26 @@ export function CreateEqubDialog({
                   }))
                 }
                 required
+                className="rounded-xl border-slate-300 dark:border-white/10 bg-white dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm"
               />
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 pt-2">
             <Button
               type="button"
               variant="secondary"
               onClick={() => setOpen(false)}
+              className="rounded-xl text-xs"
             >
               Cancel
             </Button>
-            <Button type="submit" loading={loading}>
-              Create Equb
+            <Button
+              type="submit"
+              loading={loading}
+              className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold px-5 text-xs shadow-md shadow-emerald-500/20"
+            >
+              Create Equb Group
             </Button>
           </DialogFooter>
         </form>
