@@ -152,7 +152,10 @@ export async function initiatePayment(
     metadata: { providerTransactionId: result.providerTransactionId },
   });
 
-  return payment;
+  return {
+    ...payment,
+    ...(result.redirectUrl ? { redirectUrl: result.redirectUrl } : {}),
+  };
 }
 
 export async function verifyAndRecordPayment(
@@ -256,10 +259,21 @@ export async function verifyAndRecordPayment(
       throw new Error("Verified payment amount does not match the obligation");
     }
 
-    transaction.update(paymentDoc.ref, {
-      status: verification.status,
-      failureReason: verification.failureReason,
-    });
+    if (verification.status === "PENDING" || verification.status === "INITIATED") {
+      transaction.update(paymentDoc.ref, {
+        status: verification.status,
+      });
+      return { ...freshPayment, status: verification.status };
+    }
+
+    const failurePatch: Record<string, unknown> = {
+      status: "FAILED",
+    };
+    if (verification.failureReason) {
+      failurePatch.failureReason = verification.failureReason;
+    }
+
+    transaction.update(paymentDoc.ref, failurePatch);
 
     await createAuditLog({
       action: "PAYMENT_FAILED",
@@ -267,10 +281,12 @@ export async function verifyAndRecordPayment(
       equbId: freshPayment.equbId,
       affectedUserId: freshPayment.userId,
       entityId: freshPayment.id,
-      metadata: { reason: verification.failureReason },
+      ...(verification.failureReason
+        ? { metadata: { reason: verification.failureReason } }
+        : {}),
     });
 
-    return { ...freshPayment, status: verification.status };
+    return { ...freshPayment, status: "FAILED" };
   });
 }
 

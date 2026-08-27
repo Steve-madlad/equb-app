@@ -103,6 +103,7 @@ export default function EqubDetailPage({
     amountMinor: number;
     dueDate: string;
     status: string;
+    redirectUrl?: string;
   } | null>(null);
   const [selectedMembershipIds, setSelectedMembershipIds] = useState<string[]>(
     [],
@@ -330,6 +331,7 @@ export default function EqubDetailPage({
             matchingObligation?.dueDate ??
             new Date().toISOString(),
           status: body.payment.status,
+          redirectUrl: body.payment.redirectUrl,
         });
         setPaymentSheetOpen(true);
       } else {
@@ -1255,6 +1257,7 @@ export default function EqubDetailPage({
           equbName={equb.name}
           obligationLabel="Contribution payment"
           provider={paymentProvider === "chapa" ? "chapa" : "mock"}
+          redirectUrl={activePayment.redirectUrl}
           onChapaSuccess={async () => {
             const response = await fetch("/api/payments", {
               method: "POST",
