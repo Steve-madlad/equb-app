@@ -1,4 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "How It Works",
+  description:
+    "Learn how Ethiopian Equb (እቁብ) rotating savings works: peer-to-peer contributions, fair automated draws, and zero administrator fees.",
+  alternates: {
+    canonical: "/how-it-works",
+  },
+};
 
 export default function HowItWorksPage() {
   return (

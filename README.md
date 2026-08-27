@@ -1,42 +1,75 @@
-# Equb (እቁብ) — Production-Ready Rotating Savings Platform
+# Equb (እቁብ) — Modern Rotating Savings & Credit Platform
 
-A modern web application for managing Ethiopian Equb rotating savings groups. Built with Next.js, TypeScript, and Firebase.
+![Equb App](public/equb-app.png)
+
+A modern, production-ready web application for managing Ethiopian Equb (እቁብ) rotating savings and credit associations (ROSCA). Built with Next.js 15, TypeScript, Tailwind CSS, and Firebase.
+
+---
+
+## Features
+
+- **Traditional Equb, Modernized**: Digitizes the traditional Ethiopian peer-to-peer rotating savings model with transparent ledgers, automated cycle schedules, and zero administrative fees.
+- **Chapa Payment & Payout Integration**:
+  - In-app mobile money contributions via Telebirr, CBE Birr, Ebirr, and M-Pesa.
+  - Official Chapa Hosted Checkout redirect for comprehensive test banking & OTP simulation.
+  - Automated return verification page (`/payments/chapa/complete`) with polling settlement support.
+  - Outbound winning disbursements directly to winners' Ethiopian bank accounts via Chapa Transfers API.
+- **Account & Payout Settings (`/settings`)**:
+  - Manage identity, contact phone number, and winning payout bank/wallet details.
+  - Dynamic bank list backed by `/api/banks` (CBE, Telebirr, CBE Birr, Bank of Abyssinia, Awash, Dashen, M-Pesa, COOP, etc.).
+  - In-app password security updates and light/dark theme preference switching.
+- **Fair & Auditable Random Draws**: Server-side random selection strategy ensuring each member receives exactly one payout per cycle round.
+- **Transparent Ledgers & Live Pool Tracking**: Live Equb pool balances derived from immutable ledger entries.
+- **Member Rejoin & Withdrawal Workflow**: Members who previously withdrew can easily re-apply without membership state conflicts.
+- **SEO & Social Sharing Ready**: Complete OpenGraph, Twitter Large Image cards, dynamic XML sitemap (`/sitemap.xml`), `robots.txt`, and `schema.org` JSON-LD structured data.
+
+---
 
 ## Project Structure
 
 ```
 equb-app/
+├── public/
+│   └── equb-app.png            # SEO & social sharing preview banner
 ├── src/
 │   ├── app/                    # Next.js App Router pages & API routes
-│   │   ├── api/                # Server-side API (auth, equbs, payments, webhooks)
+│   │   ├── (auth)/             # Login & registration pages
 │   │   ├── admin/              # Admin dashboard, audit, and Equb management
+│   │   ├── api/                # Server-side API (auth, equbs, payments, banks, webhooks)
 │   │   ├── dashboard/          # User dashboard with member/discovery sections
-│   │   ├── search/             # User-facing Equb search with filters
 │   │   ├── equbs/              # Admin Equb search & Equb detail pages
-│   │   ├── payments/mock/      # Mock payment provider UI
-│   │   ├── login/ & register/  # Authentication pages
-│   │   └── how-it-works/       # Public explainer
+│   │   ├── financial-activities/# Financial history and transaction logs
+│   │   ├── how-it-works/       # Public explainer page
+│   │   ├── notifications/      # Real-time notification center
+│   │   ├── payments/           # Chapa return completion & verification flow
+│   │   ├── search/             # User-facing Equb search with filters
+│   │   ├── settings/           # User profile & payout account management
+│   │   ├── robots.ts           # Dynamic robots.txt generator
+│   │   └── sitemap.ts          # Dynamic sitemap.xml generator
 │   ├── components/
-│   │   ├── ui/                 # Button, Card, StatusBadge
-│   │   └── layout/             # Navbar
+│   │   ├── ui/                 # Button, Card, StatusBadge, Toast (Sonner)
+│   │   ├── layout/             # Navbar, HomeNavbar with profile dropdown
+│   │   └── payments/           # MockPaymentSheet with Chapa inline checkout
 │   └── lib/
 │       ├── domain/             # Types, money, lifecycle, eligibility rules
 │       ├── firebase/           # Client & Admin SDK setup, auth helpers
-│       ├── payments/           # PaymentProvider interface + MockPaymentProvider
-│       ├── payout/             # PayoutSelectionStrategy + RandomSelectionStrategy
-│       └── services/           # Equb, payment, payout, ledger, audit services
+│       ├── payments/           # PaymentProvider interface, Mock, and Chapa providers
+│       ├── payout/             # PayoutSelectionStrategy & RandomSelectionStrategy
+│       └── services/           # Equb, payment, payout, bank list, ledger, audit services
 ├── tests/                      # Vitest unit tests
 ├── firestore.rules             # Security rules (no client financial writes)
 ├── firestore.indexes.json      # Required composite indexes
 └── firebase.json               # Firebase project configuration
 ```
 
+---
+
 ## Firebase Configuration Requirements
 
-1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
-2. Enable **Authentication** (Email/Password provider)
-3. Create a **Cloud Firestore** database
-4. Generate a **Service Account** key for Admin SDK (Project Settings → Service Accounts)
+1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com).
+2. Enable **Authentication** (Email/Password provider).
+3. Create a **Cloud Firestore** database.
+4. Generate a **Service Account** key for Admin SDK (Project Settings → Service Accounts).
 5. Install Firebase CLI: `npm install -g firebase-tools`
 6. Login and init: `firebase login && firebase use --add`
 7. Deploy rules: `firebase deploy --only firestore:rules,firestore:indexes`
@@ -49,7 +82,9 @@ Firebase Cloud Functions are intentionally not used because they require a paid 
 npm run firebase:emulators
 ```
 
-Emulator ports: Auth (9099), Firestore (8080), UI (4000)
+Emulator ports: Auth (`9099`), Firestore (`8080`), UI (`4000`).
+
+---
 
 ## Environment Variables
 
@@ -59,65 +94,57 @@ Copy `.env.example` to `.env.local`:
 cp .env.example .env.local
 ```
 
-| Variable                                   | Description                                               |
-| ------------------------------------------ | --------------------------------------------------------- |
-| `NEXT_PUBLIC_FIREBASE_API_KEY`             | Firebase client API key                                   |
-| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`         | Auth domain                                               |
-| `NEXT_PUBLIC_FIREBASE_PROJECT_ID`          | Project ID                                                |
-| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`      | Storage bucket                                            |
-| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Messaging sender ID                                       |
-| `NEXT_PUBLIC_FIREBASE_APP_ID`              | App ID                                                    |
-| `FIREBASE_PROJECT_ID`                      | Admin SDK project ID                                      |
-| `FIREBASE_CLIENT_EMAIL`                    | Service account email                                     |
-| `FIREBASE_PRIVATE_KEY`                     | Service account private key (with `\n` for newlines)      |
-| `NEXT_PUBLIC_APP_URL`                      | App URL (default: http://localhost:3000)                  |
-| `PAYMENT_PROVIDER`                         | `mock` (default) or `chapa`                               |
-| `NEXT_PUBLIC_PAYMENT_PROVIDER`             | Must match `PAYMENT_PROVIDER` for the browser checkout UI |
-| `NEXT_PUBLIC_CHAPA_PUBLIC_KEY`             | Chapa public key used by Inline JS                        |
-| `CHAPA_SECRET_KEY`                         | Chapa secret key, server-only                             |
-| `CHAPA_WEBHOOK_SECRET`                     | Secret hash configured for the Chapa webhook              |
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase client API key |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Auth domain |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Project ID |
+| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Storage bucket |
+| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Messaging sender ID |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` | App ID |
+| `FIREBASE_PROJECT_ID` | Admin SDK project ID |
+| `FIREBASE_CLIENT_EMAIL` | Service account email |
+| `FIREBASE_PRIVATE_KEY` | Service account private key (with `\n` for newlines) |
+| `NEXT_PUBLIC_APP_URL` | App URL (default: `http://localhost:3000`) |
+| `PAYMENT_PROVIDER` | `chapa` or `mock` |
+| `NEXT_PUBLIC_PAYMENT_PROVIDER` | Must match `PAYMENT_PROVIDER` for browser checkout UI |
+| `NEXT_PUBLIC_CHAPA_PUBLIC_KEY` | Chapa public key used by client checkout |
+| `CHAPA_SECRET_KEY` | Chapa secret key (server-only) |
+| `CHAPA_ENCRYPTION_KEY` | Chapa encryption key (server-only) |
+| `CHAPA_WEBHOOK_SECRET` | Secret hash configured for Chapa webhooks |
 
-### Chapa payments
+---
 
-Install the dependencies, then set `PAYMENT_PROVIDER=chapa` and
-`NEXT_PUBLIC_PAYMENT_PROVIDER=chapa`. The contribution sheet renders Chapa
-Inline JS with CBE Birr, BOA Card, Telebirr, and M-Pesa enabled. Configure
-`https://your-domain/api/webhooks/payments` as the Chapa webhook URL and set the
-same webhook secret in `CHAPA_WEBHOOK_SECRET`.
+## Chapa Payment Integration
 
-The app initializes each transaction server-side, verifies the callback or
-webhook with Chapa's verification API, and checks the verified amount against
-the stored obligation before writing the ledger entry. Chapa credentials must
-never be exposed to the browser.
+Set `PAYMENT_PROVIDER=chapa` and `NEXT_PUBLIC_PAYMENT_PROVIDER=chapa`.
+
+- **In-App Mobile Money Channels**: Telebirr, CBE Birr, Ebirr, and M-Pesa.
+- **Hosted Checkout**: Direct link for interactive OTP test simulations.
+- **Webhook Endpoint**: `https://your-domain.com/api/webhooks/payments` (discriminates collections from transfer callbacks).
+- **Outbound Payouts**: Automated transfer disbursements to winners via `POST https://api.chapa.co/v1/transfers`.
+
+---
 
 ## Firestore Collections / Schema
 
-| Collection      | Purpose                    | Key Fields                                                                        |
-| --------------- | -------------------------- | --------------------------------------------------------------------------------- |
-| `users`         | User profiles & roles      | `id`, `email`, `displayName`, `role` (ADMIN/USER)                                 |
-| `equbs`         | Equb configurations        | `status`, `contributionAmountMinor`, `frequency`, `memberLimit`, `numberOfCycles` |
-| `memberships`   | Member-Equb relationships  | `equbId`, `userId`, `status`, `hasReceivedPayout`                                 |
-| `cycles`        | Scheduled payout cycles    | `equbId`, `cycleNumber`, `dueDate`, `status`, `poolAmountMinor`, `drawId`         |
-| `obligations`   | Contribution obligations   | `cycleId`, `membershipId`, `amountMinor`, `status`, `dueDate`                     |
-| `payments`      | Payment attempts & records | `providerTransactionId`, `idempotencyKey`, `status`                               |
-| `payouts`       | Payout records             | `cycleId`, `membershipId`, `amountMinor`, `drawId`                                |
-| `draws`         | Random draw audit records  | `eligibleMemberIds`, `selectedMemberId`, `randomSeed`                             |
-| `ledger`        | Immutable financial ledger | `type`, `amountMinor`, `referenceId`, `referenceType`                             |
-| `auditLogs`     | System audit trail         | `action`, `actorId`, `equbId`, `metadata`                                         |
-| `notifications` | User notifications         | `userId`, `type`, `title`, `message`, `read`                                      |
+| Collection | Purpose | Key Fields |
+|---|---|---|
+| `users` | User profiles & roles | `id`, `email`, `displayName`, `phone`, `role`, `rating`, `payoutAccount` |
+| `equbs` | Equb configurations | `status`, `contributionAmountMinor`, `frequency`, `memberLimit`, `numberOfCycles` |
+| `memberships` | Member-Equb relationships | `equbId`, `userId`, `status`, `hasReceivedPayout` |
+| `cycles` | Scheduled payout cycles | `equbId`, `cycleNumber`, `dueDate`, `status`, `poolAmountMinor`, `drawId` |
+| `obligations` | Contribution obligations | `cycleId`, `membershipId`, `amountMinor`, `status`, `dueDate` |
+| `payments` | Payment records | `providerTransactionId`, `amountMinor`, `idempotencyKey`, `status` |
+| `payouts` | Payout disbursement records | `cycleId`, `membershipId`, `amountMinor`, `status`, `drawId` |
+| `draws` | Random draw audit records | `eligibleMemberIds`, `selectedMemberId`, `randomSeed` |
+| `ledger` | Immutable financial ledger | `type`, `amountMinor`, `referenceId`, `referenceType` |
+| `auditLogs` | System audit trail | `action`, `actorId`, `equbId`, `metadata` |
+| `notifications` | User notifications | `userId`, `type`, `title`, `message`, `read` |
 
-**Money representation:** All amounts stored as integer minor units (1 ETB = 100 minor units). Never use floating-point for financial calculations.
+**Money representation:** All amounts are stored as integer minor units (1 ETB = 100 minor units). Format helpers standardize displays as comma-separated values (e.g. `100,000.00 ETB`).
 
-**Current pool:** The Equb detail page shows the live pool balance derived from ledger entries, so it reflects posted contributions and completed payouts.
-**Dashboard layout:** The user dashboard separates Equbs you are part of from the discoverable list, so your memberships are easier to scan at a glance.
-
-## Authentication Setup
-
-1. Enable Email/Password in Firebase Authentication console
-2. Users register via `/register` — creates Firebase Auth account + Firestore profile
-3. First admin: manually set `role: "ADMIN"` on a user document in Firestore console
-4. All API routes verify Firebase ID tokens server-side via Admin SDK
-5. Firestore security rules prevent client-side modification of financial data
+---
 
 ## Equb Lifecycle
 
@@ -129,259 +156,30 @@ DRAFT → OPEN_FOR_MEMBERS → LOCKED → ACTIVE → COMPLETED
                           CANCELLED (from most states)
 ```
 
-| State                | What happens                                    |
-| -------------------- | ----------------------------------------------- |
-| **DRAFT**            | Admin creates Equb configuration                |
-| **OPEN_FOR_MEMBERS** | Users can request membership                    |
-| **LOCKED**           | Membership closed, preparing to start           |
-| **ACTIVE**           | Cycles running, contributions due, draws happen |
-| **PAUSED**           | Temporarily halted (admin action)               |
-| **COMPLETED**        | All cycles finished, all payouts done           |
-| **CANCELLED**        | Equb terminated                                 |
-
-**Rules enforced:**
-
-- No new members after LOCKED/ACTIVE
-- Members can leave only before LOCKED
-- `numberOfCycles` must equal `memberLimit` (one payout per member)
-- No administrator fees — ever
-
-## Random Draw System
-
-The payout recipient is **never predetermined**. Each cycle:
-
-1. Admin triggers draw when cycle is ready
-2. Server calculates eligible members (paid current cycle, no overdue, hasn't received payout)
-3. If zero eligible → cycle set to `WAITING_FOR_ELIGIBILITY`, admin notified
-4. `RandomSelectionStrategy` uses `crypto.randomInt()` (NOT `Math.random()`)
-5. Result persisted atomically in Firestore transaction
-6. Draw audit record created with eligible list, selected member, random seed
-7. Duplicate/concurrent draws rejected (cycle already has `drawId`)
-
-**Architecture:**
-
-```
-PayoutSelectionStrategy (interface)
-  └── RandomSelectionStrategy (implemented)
-  └── [Future strategies can be added]
-```
-
-Draw can be triggered via:
-
-- Next.js API: `POST /api/equbs/[id]/draw`
-
-Overdue obligations can be marked by an admin via:
-
-- Next.js API: `POST /api/admin/maintenance/overdue`
-
-## Payment Providers
-
-### Chapa
-
-The Chapa provider initializes transactions server-side and the Equb details
-page renders Chapa Inline JS in the existing payment sheet. The checkout
-enables CBE Birr, BOA Card, Telebirr, and M-Pesa. Chapa callbacks and signed
-webhooks are verified server-side, and the verified amount must match the
-stored contribution obligation before the ledger is updated.
-
-Set both `PAYMENT_PROVIDER=chapa` and `NEXT_PUBLIC_PAYMENT_PROVIDER=chapa`,
-then configure `https://your-domain/api/webhooks/payments` in Chapa. The
-browser receives only the public key; `CHAPA_SECRET_KEY` remains server-only.
-
-### Mock
-
-The mock provider implements the full `PaymentProvider` interface:
-
-```
-PaymentProvider
-  ├── createPayment()      → generates MOCK-YYYY-NNNNNN ID
-  ├── getPaymentStatus()
-  ├── verifyPayment()
-  ├── handleWebhook()      → idempotent processing
-  └── refundPayment()
-```
-
-**User flow:**
-
-1. User clicks "Pay Contribution" on Equb detail page
-2. Server creates payment record (status: INITIATED) via `initiatePayment()`
-3. User redirected to `/payments/mock/[transactionId]`
-4. User selects Success/Failed outcome
-5. Server verifies payment via `verifyAndRecordPayment()`
-6. On success: obligation marked PAID, ledger entry created, notification sent
-
-**The frontend never sets `status = PAID` directly.**
-
-## Adding Another Payment Provider
-
-Replace `MockPaymentProvider` with minimal changes:
-
-1. Create `src/lib/payments/{Provider}PaymentProvider.ts`
-2. Implement the `PaymentProvider` interface
-3. Add case in `src/lib/payments/index.ts`:
-
-```typescript
-case "provider":
-  return new ProviderPaymentProvider();
-```
-
-4. Set `PAYMENT_PROVIDER=provider` in environment
-5. Configure webhook URL: `https://yourdomain.com/api/webhooks/payments`
-6. **No changes needed** to equbService, paymentService, ledgerService, or payoutService
-
-```
-Equb System → PaymentProvider interface → MockPaymentProvider
-                                         → ChapaPaymentProvider
-                                         → Future providers
-```
-
-## Running Locally
-
-```bash
-# Install dependencies
-npm install
-
-# Configure environment
-cp .env.example .env.local
-# Fill in Firebase credentials
-
-# Start Firebase emulators (optional, separate terminal)
-npm run firebase:emulators
-
-# Start Next.js dev server
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000)
-
-### Create first admin
-
-After registering a user, update their Firestore document:
-
-```
-users/{userId} → role: "ADMIN"
-```
-
-## Running Tests
-
-```bash
-npm test          # Run all tests once
-npm run test:watch  # Watch mode
-```
-
-Tests cover: money utilities, lifecycle transitions, eligibility rules, random selection, cycle date generation.
-
-## Known Limitations
-
-- **Chapa payment methods require a configured Chapa account** — availability and limits are controlled by Chapa
-- **Mock payment store is in-memory** — resets on server restart (use Firestore-backed store for persistence)
-- **No email/SMS notifications** — in-app notifications only
-- **No member replacement** — architecture supports it, not implemented
-- **Penalties configured but not auto-applied** — architecture ready, default is no penalties
-- **Single currency** — ETB only (extensible)
-- **Admin role assignment** — manual via Firestore console
-- **Admin audit viewer** — available in the app at `/admin/audit`
-- **User dashboard split** — active membership Equbs are grouped separately from discoverable Equbs
-- **User/admin search pages** — `/search` is user-facing, `/equbs` is admin-facing
-- **Automated cycle advancement & scheduler** — implemented via QStash signature verification at `/api/admin/maintenance/payouts` and managed via `/api/admin/maintenance/schedule`
-- **Chapa Outbound Transfers & Dynamic Banks** — integrated via `src/lib/services/chapaTransferService.ts` and `GET /api/banks` with fallback for 10 Ethiopian financial institutions
-- **Webhook Event Discrimination** — `POST /api/webhooks/payments` discriminates incoming collection checkouts from outbound transfer webhooks
-
-## Future Integration Points
-
-| Feature                    | Integration Point                                                      |
-| -------------------------- | ---------------------------------------------------------------------- |
-| Real payments (Inflow)     | `src/lib/payments/index.ts` → `ChapaPaymentProvider.ts`                |
-| Outbound Payouts (Outflow) | `src/lib/services/chapaTransferService.ts` → `POST /v1/transfers`      |
-| Dynamic Bank List          | `src/app/api/banks/route.ts` → `GET /api/banks`                        |
-| Payment & Transfer Webhooks| `src/app/api/webhooks/payments/route.ts`                               |
-| SMS notifications          | `src/lib/services/notificationService.ts`                              |
-| Member replacement         | New service + membership status transitions                            |
-| Penalty auto-application   | `markOverdueObligations()` + ledger entries                            |
-| Additional frequencies     | `src/lib/domain/cycleUtils.ts`                                         |
-| Multi-currency             | `src/lib/domain/money.ts`                                              |
-| Additional draw strategies | `src/lib/payout/PayoutSelectionStrategy.ts`                            |
-| Automated cycle scheduler  | Upstash QStash schedule invoking a protected Next.js maintenance route |
-| Financial reports          | Query `ledger` collection with aggregation                             |
-
-
-## Automated Cycle Jobs
-
-### Recommendation: Upstash QStash
-
-QStash is the preferred free scheduler for this project. It can deliver a
-signed HTTP request to a public Next.js route, retry failed deliveries, and
-schedule recurring jobs. The current free tier documents 1,000 messages per
-day, 10 active schedules, 50 GB bandwidth, a 1 MB message size, and a maximum
-7-day delay. One daily schedule is enough for an initial Equb sweep, so the
-free limits should be comfortable for a small deployment.
-
-The intended design is one QStash schedule, for example once per day in UTC,
-calling the protected route `/api/admin/maintenance/payouts`. Create or update
-the schedule by calling `POST /api/admin/maintenance/schedule` with an admin
-Firebase token. That route
-should:
-
-1. Verify the `Upstash-Signature` using QStash signing keys.
-2. Query Firestore for due cycles and overdue obligations.
-3. Mark overdue obligations before evaluating eligibility.
-4. Draw only from members who paid the current cycle, have no overdue or partial obligations, and have not already received a payout.
-5. Use stable cycle IDs and existing draw IDs for idempotency.
-6. Report the selected member, paid member, and every member not paid to all admins.
-7. Return `200` only after the work is complete; leave failed work retryable.
-
-QStash schedules the job and retries delivery; it must never decide payout
-eligibility or write financial records. Those decisions belong in the service
-layer and Firestore transactions. A separate admin-only manual trigger should
-remain available for recovery and operational review.
-
-### Outbound Disbursement & Chapa Transfers Reality Check
-
-Automated outbound transfers from your application to members' bank accounts or mobile wallets (CBE, Awash, Dashen, Telebirr, M-Pesa) via Chapa (`POST /v2/payouts` or `POST /v1/transfers`) have specific **legal, operational, and financial requirements**:
-
-1. **Business Compliance & KYC (Mandatory for Live Payouts):**
-   - Chapa Transfer/Payout API requires a fully verified **Live Business Merchant Account** with an approved trade license in Ethiopia (TIN Certificate, Business License, General Manager / Sole Proprietor ID, Proof of Address).
-   - Individual developers or unverified accounts cannot disburse real money via the API. In test mode, transfers can only be simulated with test keys (`CHAPA_TEST_...`).
-2. **Settlement Timing (Ledger vs. Available Balance):**
-   - When members pay contributions via Chapa Inline / Collections, the funds enter your **Ledger Balance**.
-   - Chapa requires a clearance/settlement period (typically **T+1 or ~24 hours**) before funds convert into the **Available Balance**.
-   - The Transfer/Payout API strictly draws from the **Available Balance**. If a sweep runs immediately on the contribution deadline before settlement, the automated transfer fails with `Insufficient Available Balance` unless the merchant pre-funds their Chapa float account.
-3. **Recipient Bank Account Details:**
-   - Outbound disbursement requires valid destination details for each winner:
-     - `bank_slug` (e.g., `cbe`, `telebirr`, `awash_bank`, etc.)
-     - `account_number` (or phone number for Telebirr / CBE Birr)
-     - `account_name` (must match the bank record)
-   - User profiles and memberships must store verified bank info before automated API transfers can execute.
-4. **Approval Checks & Security:**
-   - By default, Chapa merchants have 2FA and OTP/URL transfer approvals enabled on the dashboard. Unattended automated API payouts require coordination with Chapa support to whitelist direct API transfers.
-5. **Asynchronous Settlement & Reversals:**
-   - Interbank transfers via EthSwitch/banks are asynchronous. Payouts must be tracked in `PENDING`/`PROCESSING` and confirmed via Chapa webhooks or verification endpoints before final ledger completion.
-
-Currently, `completePayout()` performs an **internal ledger and state transition**. When QStash triggers `/api/admin/maintenance/payouts`, it creates an eligible draw, records the payout as `PENDING`, and notifies admins. Real-money outbound transfers can be completed manually or plugged into the Chapa Transfer API once the compliance prerequisites and bank fields are configured.
-
-
-### Alternatives
-
-| Option                       | Free capability                                                                                         | Assessment                                                                                                                                                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Cloudflare Cron Triggers** | Workers Free includes 100,000 requests/day and up to 5 cron triggers/account                            | Strong alternative, but requires a separate Worker and a very small edge adapter; the free Worker CPU limit is 10 ms per invocation.                                                                            |
-| **Vercel Cron**              | Included with plans, but Hobby is limited to once per day with timing that may vary by up to 59 minutes | Convenient if deployed on Vercel, but less suitable when payout timing needs stronger delivery behavior.                                                                                                        |
-| **GitHub Actions schedule**  | Free for standard runners in public repositories                                                        | Useful for CI or a non-critical daily sweep, but GitHub documents delays under load, possible dropped runs, default-branch-only execution, and automatic disablement after 60 days without repository activity. |
-
-For a financial workflow, use QStash or Cloudflare only as the trigger. Keep
-authentication, eligibility, transaction boundaries, audit logging, and
-idempotency in the application backend.
-
-Research checked on 2026-08-25:
-
-- [Upstash QStash pricing](https://upstash.com/docs/qstash/overall/pricing)
-- [QStash schedules](https://upstash.com/docs/qstash/features/schedules)
-- [QStash signature verification](https://upstash.com/docs/qstash/howto/signature)
-- [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
-- [Cloudflare Workers limits and pricing](https://developers.cloudflare.com/workers/platform/limits/)
-- [Vercel Cron usage and pricing](https://vercel.com/docs/cron-jobs/usage-and-pricing)
-- [GitHub Actions schedule events](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule)
+| State | Description |
+|---|---|
+| **DRAFT** | Admin creates Equb configuration |
+| **OPEN_FOR_MEMBERS** | Users can discover and request membership |
+| **LOCKED** | Membership is finalized; cycle schedule is generated |
+| **ACTIVE** | Cycles and contribution rounds are active |
+| **COMPLETED** | All cycles have been paid out |
+| **PAUSED** | Temporarily suspended by administrator |
+| **CANCELLED** | Equb terminated; contributions settled |
 
 ---
 
-Built with financial correctness as the top priority. When in doubt, the system **blocks + explains + requires admin action** rather than silently performing potentially incorrect financial operations.
+## Development Commands
+
+```bash
+# Start local development server
+npm run dev
+
+# Run unit tests
+npm run test
+
+# Check TypeScript types
+npm run build
+
+# Run linting
+npm run lint
+```
