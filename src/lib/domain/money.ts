@@ -15,7 +15,12 @@ export function fromMinorUnits(minor: MoneyMinor): string {
 }
 
 export function formatMoney(minor: MoneyMinor, currency: Currency = CURRENCY_ETB): string {
-  return `${fromMinorUnits(minor)} ${currency}`;
+  const amount = new Decimal(minor).div(100).toNumber();
+  const formatted = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+  return `${formatted} ${currency}`;
 }
 
 export function addMoney(...amounts: MoneyMinor[]): MoneyMinor {

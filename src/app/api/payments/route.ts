@@ -12,12 +12,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { obligationId, action, providerTransactionId } = body;
 
+    console.log(`[API /api/payments] User ${user.id} (${user.email}) requested action: ${action}`, body);
+
     if (action === "verify" && providerTransactionId) {
       const payment = await verifyAndRecordPayment(
         providerTransactionId,
         user.id,
         resolveRequestDate(request),
       );
+      console.log(`[API /api/payments] Payment verified successfully:`, payment);
       return NextResponse.json({ payment });
     }
 
@@ -33,10 +36,13 @@ export async function POST(request: NextRequest) {
       user.id,
       resolveRequestDate(request),
     );
+    console.log(`[API /api/payments] Payment initiated successfully:`, payment);
     return NextResponse.json({ payment });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`[API /api/payments Error]:`, error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Payment failed" },
+      { error: errorMessage },
       { status: 400 },
     );
   }

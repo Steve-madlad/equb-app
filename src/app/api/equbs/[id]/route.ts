@@ -65,7 +65,12 @@ export async function GET(
     const cycles = await getCyclesForEqub(id);
     const payouts = await getPayoutsForEqub(id);
 
-    const userMembership = memberships.find((m) => m.userId === user.id);
+    const activeStatuses = ["ACTIVE", "APPROVED", "PENDING"];
+    const userMemberships = memberships.filter((m) => m.userId === user.id);
+    const userMembership =
+      userMemberships.find((m) => activeStatuses.includes(m.status)) ??
+      userMemberships.sort((a, b) => (b.joinedAt || "").localeCompare(a.joinedAt || ""))[0] ??
+      null;
     let userObligations: Awaited<ReturnType<typeof getObligationsForUser>> = [];
     let eligibility: { eligible: boolean; reason: string | null } | null = null;
     let pendingRequests: Array<

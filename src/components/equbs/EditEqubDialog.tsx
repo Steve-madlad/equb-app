@@ -43,11 +43,13 @@ export function EditEqubDialog({
   equb,
   membersCount,
   onSaved,
+  disabled,
 }: {
   token: string;
   equb: Equb;
   membersCount: number;
   onSaved: () => Promise<void> | void;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -137,7 +139,7 @@ export function EditEqubDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+      <DialogTrigger asChild disabled={disabled}>
         <Button
           variant="secondary"
           size="sm"

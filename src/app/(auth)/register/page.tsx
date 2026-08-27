@@ -11,11 +11,13 @@ import {
   Lock,
   Mail,
   Moon,
+  Phone,
   ShieldCheck,
   Sun,
   User,
   UserCheck,
   Wallet,
+  Sparkles,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import type { SupportedBank } from "@/lib/services/chapaTransferService";
@@ -59,8 +61,10 @@ function ThemeToggle() {
 }
 
 export default function RegisterPage() {
-  const [displayName, setDisplayName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
 
   // Payout Bank Account Details
@@ -68,6 +72,7 @@ export default function RegisterPage() {
   const [selectedBankCode, setSelectedBankCode] = useState<string>("cbe");
   const [accountNumber, setAccountNumber] = useState("");
   const [accountName, setAccountName] = useState("");
+  const [accountNameManuallyEdited, setAccountNameManuallyEdited] = useState(false);
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -96,10 +101,19 @@ export default function RegisterPage() {
     return unsub;
   }, [selectedBankCode]);
 
-  const handleNameChange = (val: string) => {
-    setDisplayName(val);
-    if (!accountName || accountName === displayName) {
-      setAccountName(val);
+  // Keep Account Holder Name in sync with first + last name unless user modified it manually
+  const updateNames = (first: string, last: string) => {
+    const full = `${first.trim()} ${last.trim()}`.trim();
+    if (!accountNameManuallyEdited) {
+      setAccountName(full);
+    }
+  };
+
+  const isMobileWallet = ["telebirr", "cbebirr", "mpesa"].includes(selectedBankCode);
+
+  const handleUsePhoneForAccount = () => {
+    if (phone.trim()) {
+      setAccountNumber(phone.trim());
     }
   };
 
@@ -107,6 +121,14 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
 
+    if (!firstName.trim() || !lastName.trim()) {
+      setError("Please enter both your first and last name.");
+      return;
+    }
+    if (!phone.trim()) {
+      setError("Please enter a valid phone number for transaction processing.");
+      return;
+    }
     if (!selectedBankCode) {
       setError("Please select your payout bank or mobile money provider.");
       return;
@@ -129,13 +151,15 @@ export default function RegisterPage() {
 
       const cred = await createUserWithEmailAndPassword(
         getFirebaseAuth(),
-        email,
+        email.trim(),
         password
       );
       const token = await cred.user.getIdToken();
 
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
       const profilePayload = {
-        displayName: displayName.trim(),
+        displayName: fullName,
+        phone: phone.trim(),
         payoutAccount: {
           bankCode: selectedBank.code,
           bankName: selectedBank.name,
@@ -195,7 +219,7 @@ export default function RegisterPage() {
             Create your Equb Account
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-            Join trusted rotating savings groups across Ethiopia
+            Join trusted rotating savings groups with instant Chapa payments
           </p>
         </div>
 
@@ -213,27 +237,71 @@ export default function RegisterPage() {
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
                 <UserCheck className="w-4 h-4" />
-                <span>Personal Credentials</span>
+                <span>Personal & Contact Information</span>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    placeholder="e.g. Abebe Bikila"
-                    required
-                    className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                  />
+              {/* First Name & Last Name (Required by Chapa) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                    First Name
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => {
+                        setFirstName(e.target.value);
+                        updateNames(e.target.value, lastName);
+                      }}
+                      placeholder="e.g. Abebe"
+                      required
+                      className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                    Last / Father Name
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => {
+                        setLastName(e.target.value);
+                        updateNames(firstName, e.target.value);
+                      }}
+                      placeholder="e.g. Bikila"
+                      required
+                      className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
+                  </div>
                 </div>
               </div>
 
+              {/* Phone & Email */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                    Phone Number
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="0912345678 or +251..."
+                      required
+                      className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                     Email Address
@@ -250,23 +318,23 @@ export default function RegisterPage() {
                     />
                   </div>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      minLength={6}
-                      className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                    />
-                  </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    minLength={6}
+                    className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                  />
                 </div>
               </div>
             </div>
@@ -280,7 +348,7 @@ export default function RegisterPage() {
                   <Building2 className="w-4 h-4" />
                   <span>Payout Bank / Wallet Details</span>
                 </div>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">For winning disbursements</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">For winning payouts via Chapa</span>
               </div>
 
               <div>
@@ -309,16 +377,28 @@ export default function RegisterPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Account / Phone Number
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Account / Phone Number
+                    </label>
+                    {isMobileWallet && phone && accountNumber !== phone && (
+                      <button
+                        type="button"
+                        onClick={handleUsePhoneForAccount}
+                        className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 font-semibold"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        Use phone
+                      </button>
+                    )}
+                  </div>
                   <div className="relative">
                     <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       type="text"
                       value={accountNumber}
                       onChange={(e) => setAccountNumber(e.target.value)}
-                      placeholder="1000... or 09..."
+                      placeholder={isMobileWallet ? "09... or +251..." : "1000..."}
                       required
                       className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     />
@@ -334,7 +414,10 @@ export default function RegisterPage() {
                     <input
                       type="text"
                       value={accountName}
-                      onChange={(e) => setAccountName(e.target.value)}
+                      onChange={(e) => {
+                        setAccountName(e.target.value);
+                        setAccountNameManuallyEdited(true);
+                      }}
                       placeholder="Must match bank record"
                       required
                       className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
@@ -343,14 +426,14 @@ export default function RegisterPage() {
                 </div>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                ⚠️ Account name must match your official bank registration to avoid transfer settlement delays.
+                ⚠️ Payout transfers use Chapa direct settlement. Ensure your account name and number match your bank or mobile money account.
               </p>
             </div>
 
             <Button
               type="submit"
               loading={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold shadow-lg shadow-emerald-500/25 transition-all text-sm mt-4"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold shadow-lg shadow-emerald-500/25 transition-all text-sm mt-4 cursor-pointer"
             >
               Complete Registration
             </Button>

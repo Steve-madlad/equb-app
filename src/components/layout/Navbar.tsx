@@ -34,6 +34,7 @@ import {
   LogOut,
   Moon,
   Search,
+  Settings,
   Sun,
   Wallet,
   WalletCards,
@@ -317,50 +318,111 @@ export function Navbar({
               <DropdownMenuTrigger
                 aria-label="Profile menu"
                 title={userName}
-                className="px-0"
+                className="rounded-full ring-2 ring-transparent hover:ring-emerald-500/30 focus:outline-hidden transition-all duration-200"
               >
-                <Avatar size="lg">
-                  <AvatarFallback className="rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold text-sm px-0!">
+                <Avatar className="size-9 border border-emerald-500/20 shadow-sm">
+                  <AvatarFallback className="bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold text-sm tracking-wider">
                     {getInitials(userName)}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuLabel className="flex items-center gap-2 text-sm">
-                  <Avatar size="lg" className="h-8 w-8">
-                    <AvatarFallback className="rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white text-xs font-bold">
-                      {getInitials(userName)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="min-w-0 truncate">{userName}</span>
+              <DropdownMenuContent
+                align="end"
+                className="translate-y-2.75 w-50 p-2 rounded-2xl border border-slate-200/90 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xl shadow-slate-200/60 dark:shadow-black/10"
+              >
+                <DropdownMenuLabel className="p-2">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9 border border-emerald-500/20 shrink-0">
+                      <AvatarFallback className="bg-gradient-to-tr from-emerald-600 to-teal-500 text-white text-xs font-bold">
+                        {getInitials(userName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {userName}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span
+                          className={cn(
+                            "inline-flex items-center px-1.5 py-0.2 rounded-md text-[10px] font-bold uppercase tracking-wider",
+                            isAdmin
+                              ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20"
+                              : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
+                          )}
+                        >
+                          {isAdmin ? "Admin" : "Member"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="my-1.5 border-t border-slate-200/80 dark:border-white/10" />
                 {showDashboard && (
-                  <DropdownMenuItem onClick={() => { window.location.href = "/dashboard"; }}>
-                    <LayoutDashboard className="h-4 w-4" />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      window.location.href = "/dashboard";
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-600 dark:focus:text-emerald-400 cursor-pointer transition-colors"
+                  >
+                    <LayoutDashboard className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     Dashboard
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => { window.location.href = "/notifications"; }}>
-                  <Bell className="h-4 w-4" />
-                  Notifications
+                <DropdownMenuItem
+                  onClick={() => {
+                    window.location.href = "/notifications";
+                  }}
+                  className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-600 dark:focus:text-emerald-400 cursor-pointer transition-colors"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Bell className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    Notifications
+                  </div>
+                  {typeof notificationCount === "number" &&
+                    notificationCount > 0 && (
+                      <span className="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-white">
+                        {notificationCount}
+                      </span>
+                    )}
                 </DropdownMenuItem>
                 {authenticated && !isAdmin && (
-                  <DropdownMenuItem onClick={() => { window.location.href = "/financial-activities"; }}>
-                    <WalletCards className="h-4 w-4" />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      window.location.href = "/financial-activities";
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-600 dark:focus:text-emerald-400 cursor-pointer transition-colors"
+                  >
+                    <WalletCards className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     Finances
                   </DropdownMenuItem>
                 )}
                 {showAuditLogs && (
-                  <DropdownMenuItem onClick={() => { window.location.href = "/admin/audit"; }}>
-                    <FileClock className="h-4 w-4" />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      window.location.href = "/admin/audit";
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-600 dark:focus:text-emerald-400 cursor-pointer transition-colors"
+                  >
+                    <FileClock className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     Audit Logs
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem
+                  onClick={() => {
+                    window.location.href = "/settings";
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-600 dark:focus:text-emerald-400 cursor-pointer transition-colors"
+                >
+                  <Settings className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  Settings
+                </DropdownMenuItem>
                 {onSignOut && (
                   <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={onSignOut} className="text-red-500 dark:text-red-400 focus:text-red-500">
+                    <DropdownMenuSeparator className="my-1.5 border-t border-slate-200/80 dark:border-white/10" />
+                    <DropdownMenuItem
+                      onClick={onSignOut}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 focus:bg-rose-50 dark:focus:bg-rose-500/10 focus:text-rose-600 dark:focus:text-rose-400 cursor-pointer transition-colors"
+                    >
                       <LogOut className="h-4 w-4" />
                       Sign out
                     </DropdownMenuItem>

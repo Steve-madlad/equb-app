@@ -4,14 +4,7 @@ import { EditEqubDialog } from "@/components/equbs/EditEqubDialog";
 import { Navbar } from "@/components/layout/Navbar";
 import { MockPaymentSheet } from "@/components/payments/MockPaymentSheet";
 import { Button } from "@/components/ui/Button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EqubLoading } from "@/components/ui/EqubLoading";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
@@ -121,6 +114,8 @@ export default function EqubDetailPage({
     memberName: string;
   } | null>(null);
   const [withdrawConfirmOpen, setWithdrawConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
   const paymentProvider = process.env.NEXT_PUBLIC_PAYMENT_PROVIDER ?? "mock";
 
   const loadData = useCallback(async (id: string, authToken: string) => {
@@ -169,6 +164,11 @@ export default function EqubDetailPage({
         );
       }
       loadData(equbId, t);
+      // Fetch notification count
+      fetch("/api/notifications", { headers: { Authorization: `Bearer ${t}` } })
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => { if (d?.unreadCount != null) setNotificationCount(d.unreadCount); })
+        .catch(() => undefined);
     });
     return unsub;
   }, [equbId, loadData]);
@@ -240,13 +240,13 @@ export default function EqubDetailPage({
 
   async function handleApprove(membershipId: string) {
     setActionLoading(true);
-    const res = await fetch(`/api/memberships/${membershipId}`, {
+    const res = await fetch(`/api/equbs/${equbId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ action: "approve" }),
+      body: JSON.stringify({ action: "approve_member", membershipId }),
     });
     if (res.ok) {
       toast.success("Member approved.");
@@ -260,13 +260,13 @@ export default function EqubDetailPage({
 
   async function handleReject(membershipId: string) {
     setActionLoading(true);
-    const res = await fetch(`/api/memberships/${membershipId}`, {
+    const res = await fetch(`/api/equbs/${equbId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ action: "reject" }),
+      body: JSON.stringify({ action: "reject_member", membershipId }),
     });
     if (res.ok) {
       toast.success("Membership request rejected.");
@@ -303,32 +303,46 @@ export default function EqubDetailPage({
 
   async function handlePay(obligationId: string) {
     setActionLoading(true);
-    const res = await fetch("/api/payments", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        action: "initiate",
-        obligationId,
-        provider: paymentProvider,
-      }),
-    });
-    if (res.ok) {
-      const body = await res.json();
-      setActivePayment({
-        providerTransactionId: body.payment.providerTransactionId,
-        amountMinor: body.payment.amountMinor,
-        dueDate: body.obligation.dueDate,
-        status: body.payment.status,
+    try {
+      const res = await fetch("/api/payments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: "initiate",
+          obligationId,
+          provider: paymentProvider,
+        }),
       });
-      setPaymentSheetOpen(true);
-    } else {
-      const body = await res.json().catch(() => null);
-      toast.error(body?.error ?? "Unable to initiate payment.");
+      if (res.ok) {
+        const body = await res.json();
+        const matchingObligation = userObligations.find(
+          (o) => o.id === obligationId,
+        );
+        setActivePayment({
+          providerTransactionId: body.payment.providerTransactionId,
+          amountMinor:
+            body.payment.amountMinor ?? matchingObligation?.totalDueMinor ?? 0,
+          dueDate:
+            body.obligation?.dueDate ??
+            matchingObligation?.dueDate ??
+            new Date().toISOString(),
+          status: body.payment.status,
+        });
+        setPaymentSheetOpen(true);
+      } else {
+        const body = await res.json().catch(() => null);
+        toast.error(body?.error ?? "Unable to initiate payment.");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Unable to initiate payment.",
+      );
+    } finally {
+      setActionLoading(false);
     }
-    setActionLoading(false);
   }
 
   async function handlePaymentOutcome(outcome: "SUCCESS" | "FAILED") {
@@ -360,13 +374,16 @@ export default function EqubDetailPage({
 
   async function handleWithdraw() {
     setActionLoading(true);
-    const res = await fetch(`/api/memberships/${data?.userMembership?.id}`, {
+    const res = await fetch(`/api/equbs/${equbId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ action: "leave" }),
+      body: JSON.stringify({
+        action: "withdraw_membership",
+        membershipId: activeUserMembership?.id ?? data?.userMembership?.id,
+      }),
     });
     if (res.ok) {
       toast.success("Withdrawn from Equb.");
@@ -418,7 +435,6 @@ export default function EqubDetailPage({
   }
 
   async function handleDelete() {
-    if (!window.confirm("Delete this Equb? This cannot be undone.")) return;
     setActionLoading(true);
     const res = await fetch(`/api/equbs/${equbId}`, {
       method: "DELETE",
@@ -540,6 +556,14 @@ export default function EqubDetailPage({
     ]),
   );
 
+  // A membership that is LEFT, REJECTED, or REMOVED is treated as "not a member"
+  // so they see the join button again.
+  const INACTIVE_STATUSES = ["LEFT", "REJECTED", "REMOVED"];
+  const activeUserMembership =
+    userMembership && !INACTIVE_STATUSES.includes(userMembership.status)
+      ? userMembership
+      : null;
+
   return (
     <div className="min-h-screen bg-slate-100/70 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 transition-colors duration-300">
       {/* Ambient glow (dark mode only) */}
@@ -554,6 +578,7 @@ export default function EqubDetailPage({
         isAdmin={isAdmin}
         searchHref="/search"
         notificationsHref="/notifications"
+        notificationCount={notificationCount}
         onSignOut={() =>
           signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))
         }
@@ -596,6 +621,7 @@ export default function EqubDetailPage({
                 <EditEqubDialog
                   token={token}
                   equb={equb}
+                  disabled={actionLoading}
                   membersCount={memberCount}
                   onSaved={() => loadData(equbId, token)}
                 />
@@ -604,11 +630,11 @@ export default function EqubDetailPage({
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={handleDelete}
+                  onClick={() => setDeleteConfirmOpen(true)}
                   loading={actionLoading}
                   className="rounded-xl text-xs"
                 >
-                  <Trash2 className="w-3.5 h-3.5 mr-1" />
+                  {!actionLoading && <Trash2 className="w-3.5 h-3.5 mr-1" />}
                   Delete
                 </Button>
               )}
@@ -677,19 +703,19 @@ export default function EqubDetailPage({
                 </h2>
               </div>
 
-              {userMembership ? (
+              {activeUserMembership ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 p-3 border border-slate-200/70 dark:border-white/5">
                       <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase">Membership</p>
                       <div className="mt-1">
-                        <StatusBadge status={userMembership.status} />
+                        <StatusBadge status={activeUserMembership.status} />
                       </div>
                     </div>
                     <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 p-3 border border-slate-200/70 dark:border-white/5">
                       <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase">Payout Awarded</p>
                       <p className="text-sm font-bold text-slate-900 dark:text-white mt-1">
-                        {userMembership.hasReceivedPayout ? "Yes (Cycle Winner)" : "Pending Draw"}
+                        {activeUserMembership.hasReceivedPayout ? "Yes (Cycle Winner)" : "Pending Draw"}
                       </p>
                     </div>
                     {eligibility && (
@@ -742,7 +768,8 @@ export default function EqubDetailPage({
                     </div>
                   ))}
 
-                  {userMembership &&
+                  {activeUserMembership &&
+                    ["PENDING", "APPROVED"].includes(activeUserMembership.status) &&
                     !["ACTIVE", "COMPLETED", "CANCELLED"].includes(equb.status) && (
                       <Button
                         variant="secondary"
@@ -750,13 +777,19 @@ export default function EqubDetailPage({
                         loading={actionLoading}
                         className="rounded-xl text-xs border border-slate-200 dark:border-white/10 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
                       >
-                        <UserMinus className="mr-1.5 h-3.5 w-3.5" />
+                        {!actionLoading && <UserMinus className="mr-1.5 h-3.5 w-3.5" />}
                         Withdraw Membership
                       </Button>
                     )}
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {userMembership && INACTIVE_STATUSES.includes(userMembership.status) && (
+                    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-white/5 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-slate-400" />
+                      <span>You previously left or were removed from this group.</span>
+                    </div>
+                  )}
                   <p className="text-sm text-slate-700 dark:text-slate-300">
                     You are not currently enrolled in this Equb group.
                   </p>
@@ -828,7 +861,7 @@ export default function EqubDetailPage({
                         loading={actionLoading}
                         className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold py-2.5 shadow-lg shadow-emerald-500/20"
                       >
-                        <Play className="w-4 h-4 mr-2" />
+                        {!actionLoading && <Play className="w-4 h-4 mr-2" />}
                         Start Equb & Advance to Cycle 1
                       </Button>
                     ) : (
@@ -836,6 +869,18 @@ export default function EqubDetailPage({
                         Equb requires at least {minimumApprovedMembersToStart} approved members before it can start.
                       </p>
                     )}
+                  </div>
+                )}
+
+                {!["DRAFT", "OPEN_FOR_MEMBERS"].includes(equb.status) && (
+                  <div className="flex flex-col items-center justify-center py-6 gap-2 text-center">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center mb-1">
+                      <ShieldAlert className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">No actions available</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                      This Equb is <span className="font-medium capitalize">{equb.status.toLowerCase().replace(/_/g, " ")}</span> — lifecycle controls are locked.
+                    </p>
                   </div>
                 )}
               </div>
@@ -902,7 +947,7 @@ export default function EqubDetailPage({
                   disabled={selectedPendingCount === 0}
                   className="rounded-xl border border-slate-200 dark:border-white/10 text-xs font-semibold"
                 >
-                  <CheckCheck className="mr-1.5 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  {!actionLoading && <CheckCheck className="mr-1.5 h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
                   Approve Selected ({selectedPendingCount})
                 </Button>
               </div>
@@ -1154,101 +1199,49 @@ export default function EqubDetailPage({
       </main>
 
       {/* Confirmation Modals */}
-      <Dialog open={startConfirmOpen} onOpenChange={setStartConfirmOpen}>
-        <DialogContent className="rounded-3xl border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xl">
-          <DialogHeader>
-            <DialogTitle>Start Equb with pending requests?</DialogTitle>
-            <DialogDescription className="text-slate-600 dark:text-slate-300">
-              {pendingMemberRows.length} pending request
-              {pendingMemberRows.length === 1 ? " is" : "s are"} still waiting.
-              Starting now will automatically reject unapproved requests.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => setStartConfirmOpen(false)}
-              className="rounded-xl"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              loading={actionLoading}
-              onClick={handleConfirmedLock}
-              className="rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold"
-            >
-              Confirm & Start
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={startConfirmOpen}
+        onOpenChange={setStartConfirmOpen}
+        variant="warning"
+        title="Start Equb with pending requests?"
+        description={`${pendingMemberRows.length} pending request${pendingMemberRows.length === 1 ? " is" : "s are"} still waiting. Starting now will automatically reject unapproved requests.`}
+        confirmLabel="Confirm & Start"
+        loading={actionLoading}
+        onConfirm={handleConfirmedLock}
+      />
 
-      <Dialog
+      <ConfirmDialog
         open={Boolean(rejectTarget)}
         onOpenChange={(open) => !open && setRejectTarget(null)}
-      >
-        <DialogContent className="rounded-3xl border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xl">
-          <DialogHeader>
-            <DialogTitle>Reject membership request?</DialogTitle>
-            <DialogDescription className="text-slate-600 dark:text-slate-300">
-              {rejectTarget?.memberName} will be notified that their request was not accepted.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => setRejectTarget(null)}
-              className="rounded-xl"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              loading={actionLoading}
-              onClick={() =>
-                rejectTarget && handleReject(rejectTarget.membershipId)
-              }
-              className="rounded-xl"
-            >
-              Reject Request
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        variant="danger"
+        title="Reject membership request?"
+        description={`${rejectTarget?.memberName ?? "This member"} will be notified that their request was not accepted.`}
+        confirmLabel="Reject Request"
+        loading={actionLoading}
+        onConfirm={() => rejectTarget && handleReject(rejectTarget.membershipId)}
+      />
 
-      <Dialog open={withdrawConfirmOpen} onOpenChange={setWithdrawConfirmOpen}>
-        <DialogContent className="rounded-3xl border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xl">
-          <DialogHeader>
-            <DialogTitle>Withdraw your membership?</DialogTitle>
-            <DialogDescription className="text-slate-600 dark:text-slate-300">
-              This will remove you from the Equb before it starts. You can request to join again later if the group is still open.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => setWithdrawConfirmOpen(false)}
-              className="rounded-xl"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              loading={actionLoading}
-              onClick={handleWithdraw}
-              className="rounded-xl"
-            >
-              Withdraw
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={withdrawConfirmOpen}
+        onOpenChange={setWithdrawConfirmOpen}
+        variant="danger"
+        title="Withdraw your membership?"
+        description="This will remove you from the Equb before it starts. You can request to join again later if the group is still open."
+        confirmLabel="Withdraw"
+        loading={actionLoading}
+        onConfirm={handleWithdraw}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={(open) => { if (!actionLoading) setDeleteConfirmOpen(open); }}
+        variant="danger"
+        title="Delete this Equb?"
+        description="This action is permanent and cannot be undone. All associated data including cycles, memberships, and records will be removed."
+        confirmLabel="Delete Equb"
+        loading={actionLoading}
+        onConfirm={handleDelete}
+      />
 
       {/* Payment Drawer */}
       {activePayment ? (

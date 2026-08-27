@@ -38,8 +38,8 @@ type MockPaymentSheetProps = {
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
-      <span className="text-gray-500">{label}</span>
-      <span className="font-medium text-gray-900">{value}</span>
+      <span className="text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="font-semibold text-slate-900 dark:text-white">{value}</span>
     </div>
   );
 }
@@ -66,91 +66,151 @@ export function MockPaymentSheet({
     if (
       !open ||
       provider !== "chapa" ||
-      isFinal ||
-      !chapaContainerRef.current
+      isFinal
     ) {
       return;
     }
 
     let cancelled = false;
-    async function initializeChapa() {
-      const publicKey = process.env.NEXT_PUBLIC_CHAPA_PUBLIC_KEY;
-      if (!publicKey || !chapaContainerRef.current) return;
+    const timer = setTimeout(async () => {
+      const publicKey =
+        process.env.NEXT_PUBLIC_CHAPA_PUBLIC_KEY ||
+        "CHAPUBK_TEST-jXkTlp1Ppz2eosDZxHwi7g33NMisHZ7k";
+      const container = document.getElementById("chapa-inline-form");
+      if (!publicKey || !container) return;
 
-      // @ts-ignore
-      const module = await import("@chapa_et/inline.js/lib/inline.js");
-      if (cancelled || !chapaContainerRef.current) return;
-      chapaContainerRef.current.replaceChildren();
-      const ChapaCheckout = (module.default ?? module) as unknown as new (
-        options: Record<string, unknown>,
-      ) => {
-        initialize: (containerId: string) => void;
-      };
+      try {
+        // @ts-ignore
+        await import("@chapa_et/inline.js/lib/inline.js");
+        if (cancelled) return;
 
-      const chapa = new ChapaCheckout({
-        publicKey,
-        amount: (amountMinor / 100).toFixed(2),
-        currency: "ETB",
-        tx_ref: transactionId,
-        availablePaymentMethods: ["cbebirr", "boa", "telebirr", "mpesa"],
-        customizations: {
-          buttonText: "Pay contribution",
-          successMessage: "Your contribution was verified.",
-          styles: `
-            .chapa-pay-button { background: #047857; color: white; border-radius: 0.75rem; font-weight: 600; min-height: 2.75rem; }
-            .chapa-pay-button:hover { background: #065f46; }
-          `,
-        },
-        callbackUrl: `${window.location.origin}/api/webhooks/payments`,
-        returnUrl: `${window.location.origin}/payments/chapa/complete?tx_ref=${encodeURIComponent(transactionId)}`,
-        onSuccessfulPayment: onChapaSuccess,
-        onPaymentFailure: () => undefined,
-        onClose: () => undefined,
-      });
-      chapa.initialize("chapa-inline-form");
-    }
+        const ChapaConstructor = (window as any).ChapaCheckout;
+        if (!ChapaConstructor) {
+          console.error("ChapaCheckout constructor not found on window");
+          return;
+        }
 
-    initializeChapa().catch(() => undefined);
+        container.replaceChildren();
+
+        const chapa = new ChapaConstructor({
+          publicKey,
+          amount: (amountMinor / 100).toFixed(2),
+          currency: "ETB",
+          tx_ref: transactionId,
+          availablePaymentMethods: ["telebirr", "cbebirr", "ebirr", "mpesa"],
+          customizations: {
+            buttonText: `Pay ${formatMoney(amountMinor)}`,
+            successMessage: "Your contribution was verified.",
+            styles: `
+              .chapa-pay-button { 
+                background: linear-gradient(to right, #10b981, #0d9488) !important; 
+                color: #ffffff !important; 
+                border-radius: 0.75rem !important; 
+                font-weight: 700 !important; 
+                font-size: 0.875rem !important;
+                min-height: 2.75rem !important; 
+                border: none !important;
+                cursor: pointer !important;
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25) !important;
+                margin-top: 1rem !important;
+                transition: all 0.2s !important;
+              }
+              .chapa-pay-button:hover { 
+                opacity: 0.95 !important;
+                transform: translateY(-1px) !important;
+              }
+              .chapa-phone-input-wrapper {
+                border-radius: 0.75rem !important;
+                border: 1px solid rgba(148, 163, 184, 0.3) !important;
+                background: rgba(241, 245, 249, 0.8) !important;
+              }
+              .dark .chapa-phone-input-wrapper {
+                background: rgba(15, 23, 42, 0.6) !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+              }
+              .chapa-phone-input {
+                background: transparent !important;
+                color: inherit !important;
+              }
+              .chapa-phone-prefix {
+                background: transparent !important;
+              }
+              .chapa-payment-methods-grid {
+                display: flex !important;
+                gap: 8px !important;
+                justify-content: space-between !important;
+                margin: 12px 0 !important;
+              }
+              .chapa-payment-method {
+                border-radius: 0.75rem !important;
+                cursor: pointer !important;
+                transition: all 0.2s !important;
+                border: 1px solid rgba(148, 163, 184, 0.3) !important;
+                background: rgba(255, 255, 255, 0.5) !important;
+              }
+              .dark .chapa-payment-method {
+                background: rgba(15, 23, 42, 0.6) !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+              }
+              .chapa-selected {
+                border-color: #10b981 !important;
+                background: rgba(16, 185, 129, 0.1) !important;
+              }
+            `,
+          },
+          callbackUrl: `${window.location.origin}/api/webhooks/payments`,
+          returnUrl: `${window.location.origin}/payments/chapa/complete?tx_ref=${encodeURIComponent(transactionId)}`,
+          onSuccessfulPayment: onChapaSuccess,
+          onPaymentFailure: (err: any) => console.error("[Chapa inline error]", err),
+          onClose: () => undefined,
+        });
+
+        chapa.initialize("chapa-inline-form");
+      } catch (err) {
+        console.error("Failed to initialize Chapa inline checkout:", err);
+      }
+    }, 100);
+
     return () => {
       cancelled = true;
-      chapaContainerRef.current?.replaceChildren();
+      clearTimeout(timer);
     };
   }, [amountMinor, isFinal, onChapaSuccess, open, provider, transactionId]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl" side="right">
-        <SheetHeader className="border-b border-border pb-5">
+      <SheetContent className="w-full sm:max-w-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10" side="right">
+        <SheetHeader className="border-b border-slate-200 dark:border-white/10 pb-5">
           <div className="flex items-start justify-between gap-4 pr-10">
             <div className="space-y-1">
-              <SheetTitle>Pay contribution</SheetTitle>
-              <SheetDescription>
+              <SheetTitle className="text-slate-900 dark:text-white">Pay contribution</SheetTitle>
+              <SheetDescription className="text-slate-500 dark:text-slate-400 text-xs">
                 Complete the contribution without leaving the Equb details page.
               </SheetDescription>
             </div>
-            <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
-              {provider === "chapa" ? "Chapa" : "Mock Stripe"}
+            <div className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+              {provider === "chapa" ? "Chapa" : "Mock Checkout"}
             </div>
           </div>
         </SheetHeader>
 
         <div className="space-y-5 overflow-y-auto px-6 py-6">
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-slate-200/90 dark:border-white/10 bg-slate-50/70 dark:bg-white/[0.03] p-5 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   {equbName}
                 </p>
-                <h3 className="text-xl font-semibold text-gray-900">
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                   {formatMoney(amountMinor)}
                 </h3>
               </div>
-              <div className="rounded-full bg-gray-100 p-3 text-gray-700">
+              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-emerald-600 dark:text-emerald-400">
                 <CreditCard className="size-5" />
               </div>
             </div>
 
-            <div className="mt-5 space-y-3 rounded-xl bg-gray-50 p-4">
+            <div className="mt-5 space-y-3 rounded-xl bg-white dark:bg-slate-950/50 p-4 border border-slate-200/60 dark:border-white/5">
               <DetailRow label="Due date" value={formatDate(dueDate)} />
               <DetailRow
                 label="Transaction"
@@ -164,10 +224,19 @@ export function MockPaymentSheet({
           </div>
 
           {provider === "chapa" && !isFinal ? (
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div id="chapa-inline-form" ref={chapaContainerRef} />
+            <div className="rounded-2xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-slate-900/60 p-5 shadow-sm">
+              <div
+                id="chapa-inline-form"
+                ref={chapaContainerRef}
+                className="min-h-[120px] flex items-center justify-center text-xs text-slate-500 dark:text-slate-400"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="size-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                  <span>Loading payment channels...</span>
+                </div>
+              </div>
               {!process.env.NEXT_PUBLIC_CHAPA_PUBLIC_KEY ? (
-                <p className="text-sm text-rose-700">
+                <p className="text-sm text-rose-600 dark:text-rose-400 mt-2">
                   Chapa is not configured. Add NEXT_PUBLIC_CHAPA_PUBLIC_KEY to
                   the environment.
                 </p>
@@ -175,20 +244,20 @@ export function MockPaymentSheet({
             </div>
           ) : null}
 
-          <div className="grid gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 sm:grid-cols-[auto,1fr] sm:items-start">
-            <div className="rounded-full bg-white p-2 text-emerald-700 shadow-sm">
+          <div className="grid gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 sm:grid-cols-[auto,1fr] sm:items-start">
+            <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-2.5 text-emerald-600 dark:text-emerald-400 shrink-0">
               <ShieldCheck className="size-5" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-emerald-900">
+              <p className="text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wide">
                 {provider === "chapa"
-                  ? "Secure Chapa checkout"
-                  : "Safe mock checkout"}
+                  ? "Secure Chapa Checkout"
+                  : "Safe Sandbox Verification"}
               </p>
-              <p className="text-sm text-emerald-800">
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                 {provider === "chapa"
                   ? "Choose CBE, BOA, Telebirr, or M-Pesa and complete the payment securely."
-                  : "This screen simulates a provider verification flow. Use it to mark the contribution as successful or failed during testing."}
+                  : "This screen simulates a provider verification flow. Click either button below to record the outcome."}
               </p>
             </div>
           </div>
@@ -198,30 +267,30 @@ export function MockPaymentSheet({
               className={[
                 "rounded-2xl border p-4",
                 status === "SUCCESS"
-                  ? "border-emerald-200 bg-emerald-50"
-                  : "border-rose-200 bg-rose-50",
+                  ? "border-emerald-500/30 bg-emerald-500/10"
+                  : "border-rose-500/30 bg-rose-500/10",
               ].join(" ")}
             >
               <div className="flex items-start gap-3">
                 {status === "SUCCESS" ? (
-                  <CheckCircle2 className="mt-0.5 size-5 text-emerald-700" />
+                  <CheckCircle2 className="mt-0.5 size-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 ) : (
-                  <XCircle className="mt-0.5 size-5 text-rose-700" />
+                  <XCircle className="mt-0.5 size-5 text-rose-600 dark:text-rose-400 shrink-0" />
                 )}
                 <div className="space-y-1">
                   <p
                     className={[
-                      "font-semibold",
+                      "font-bold text-sm",
                       status === "SUCCESS"
-                        ? "text-emerald-800"
-                        : "text-rose-800",
+                        ? "text-emerald-800 dark:text-emerald-300"
+                        : "text-rose-800 dark:text-rose-300",
                     ].join(" ")}
                   >
                     {status === "SUCCESS"
                       ? "Payment verified"
                       : "Payment not completed"}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
                     {status === "SUCCESS"
                       ? "The contribution has been recorded and the pool will update after refresh."
                       : "You can retry the payment flow from the Equb details page."}
@@ -232,12 +301,13 @@ export function MockPaymentSheet({
           ) : null}
         </div>
 
-        <SheetFooter className="border-t border-border">
+        <SheetFooter className="border-t border-slate-200 dark:border-white/10 gap-2">
           <Button
             type="button"
             variant="secondary"
             onClick={() => onOpenChange(false)}
             disabled={loading}
+            className="rounded-xl text-xs"
           >
             Close
           </Button>
@@ -249,9 +319,9 @@ export function MockPaymentSheet({
                 onClick={() => onOutcome("FAILED")}
                 loading={loading}
                 disabled={isFinal}
-                className="sm:min-w-40"
+                className="rounded-xl text-xs hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 sm:min-w-36"
               >
-                {!loading && <XCircle className="mr-2 size-4" />}
+                {!loading && <XCircle className="mr-1.5 size-3.5" />}
                 Fail payment
               </Button>
               <Button
@@ -259,9 +329,9 @@ export function MockPaymentSheet({
                 onClick={() => onOutcome("SUCCESS")}
                 loading={loading}
                 disabled={isFinal}
-                className="sm:min-w-40"
+                className="rounded-xl text-xs bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold sm:min-w-36 shadow-md shadow-emerald-500/20"
               >
-                {!loading && <ArrowRightLeft className="mr-2 size-4" />}
+                {!loading && <ArrowRightLeft className="mr-1.5 size-3.5" />}
                 Pay successfully
               </Button>
             </div>
