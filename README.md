@@ -39,7 +39,6 @@ equb-app/
 │   │   ├── dashboard/          # User dashboard with member/discovery sections
 │   │   ├── equbs/              # Admin Equb search & Equb detail pages
 │   │   ├── financial-activities/# Financial history and transaction logs
-│   │   ├── how-it-works/       # Public explainer page
 │   │   ├── notifications/      # Real-time notification center
 │   │   ├── payments/           # Chapa return completion & verification flow
 │   │   ├── search/             # User-facing Equb search with filters

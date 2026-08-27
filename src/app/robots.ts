@@ -13,7 +13,6 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: [
           "/",
-          "/how-it-works",
           "/search",
           "/login",
           "/register",
