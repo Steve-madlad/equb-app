@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { onIdTokenChanged, signOut } from "firebase/auth";
-import { getFirebaseAuth } from "@/lib/firebase/client";
-import { Navbar } from "./Navbar";
-import type { UserProfile } from "@/lib/domain/types";
+import { useEffect, useState } from 'react';
+import { onIdTokenChanged, signOut } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase/client';
+import { Navbar } from './Navbar';
+import type { UserProfile } from '@/lib/domain/types';
 
 export function HomeNavbar() {
   const [userName, setUserName] = useState<string | undefined>();
@@ -20,23 +20,23 @@ export function HomeNavbar() {
         return;
       }
 
-      setUserName(user.displayName ?? user.email ?? "Account");
+      setUserName(user.displayName ?? user.email ?? 'Account');
 
       try {
         const token = await user.getIdToken();
-        const res = await fetch("/api/users/profile", {
+        const res = await fetch('/api/users/profile', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
           const { profile } = (await res.json()) as { profile: UserProfile };
-          setSearchHref("/search");
-          setIsAdmin(profile.role === "ADMIN");
+          setSearchHref('/search');
+          setIsAdmin(profile.role === 'ADMIN');
         } else {
-          setSearchHref("/search");
+          setSearchHref('/search');
           setIsAdmin(false);
         }
       } catch {
-        setSearchHref("/search");
+        setSearchHref('/search');
         setIsAdmin(false);
       }
     });
@@ -53,7 +53,7 @@ export function HomeNavbar() {
       notificationsHref="/notifications"
       onSignOut={
         userName
-          ? () => signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))
+          ? () => signOut(getFirebaseAuth()).then(() => (window.location.href = '/'))
           : undefined
       }
     />

@@ -1,5 +1,5 @@
-import type { PaymentStatus } from "@/lib/domain/types";
-import type { Currency, MoneyMinor } from "@/lib/domain/money";
+import type { PaymentStatus } from '@/lib/domain/types';
+import type { Currency, MoneyMinor } from '@/lib/domain/money';
 
 export interface CreatePaymentInput {
   amountMinor: MoneyMinor;

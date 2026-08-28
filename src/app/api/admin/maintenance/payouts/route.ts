@@ -1,5 +1,5 @@
-import { runAutomatedPayouts } from "@/lib/services/payoutService";
-import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
+import { runAutomatedPayouts } from '@/lib/services/payoutService';
+import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
 
 async function handler(request: Request) {
   let currentDateIso: string | undefined;
@@ -7,7 +7,7 @@ async function handler(request: Request) {
     const body = (await request.json().catch(() => null)) as {
       currentDateIso?: string;
     } | null;
-    if (body && typeof body.currentDateIso === "string") {
+    if (body && typeof body.currentDateIso === 'string') {
       currentDateIso = body.currentDateIso;
     }
   } catch {
@@ -19,4 +19,3 @@ async function handler(request: Request) {
 }
 
 export const POST = verifySignatureAppRouter(handler);
-

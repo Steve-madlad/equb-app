@@ -1,21 +1,15 @@
-import type { Currency, MoneyMinor, PenaltyType } from "./money";
+import type { Currency, MoneyMinor, PenaltyType } from './money';
 
 // ─── Roles ───────────────────────────────────────────────────────────────────
 
-export type UserRole = "ADMIN" | "USER";
+export type UserRole = 'ADMIN' | 'USER';
 
 // ─── Equb lifecycle ──────────────────────────────────────────────────────────
 
 export type EqubStatus =
-  | "DRAFT"
-  | "OPEN_FOR_MEMBERS"
-  | "LOCKED"
-  | "ACTIVE"
-  | "PAUSED"
-  | "COMPLETED"
-  | "CANCELLED";
+  'DRAFT' | 'OPEN_FOR_MEMBERS' | 'LOCKED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
 
-export type ContributionFrequency = "WEEKLY" | "MONTHLY" | "CUSTOM";
+export type ContributionFrequency = 'WEEKLY' | 'MONTHLY' | 'CUSTOM';
 
 export interface EqubConfig {
   name: string;
@@ -47,13 +41,7 @@ export interface Equb extends EqubConfig {
 
 // ─── Membership ──────────────────────────────────────────────────────────────
 
-export type MembershipStatus =
-  | "PENDING"
-  | "APPROVED"
-  | "REJECTED"
-  | "ACTIVE"
-  | "LEFT"
-  | "REMOVED";
+export type MembershipStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'LEFT' | 'REMOVED';
 
 export interface Membership {
   id: string;
@@ -82,12 +70,7 @@ export interface Membership {
 // ─── Cycles ──────────────────────────────────────────────────────────────────
 
 export type CycleStatus =
-  | "UPCOMING"
-  | "ACTIVE"
-  | "WAITING_FOR_ELIGIBILITY"
-  | "DRAW_PENDING"
-  | "DRAWN"
-  | "COMPLETED";
+  'UPCOMING' | 'ACTIVE' | 'WAITING_FOR_ELIGIBILITY' | 'DRAW_PENDING' | 'DRAWN' | 'COMPLETED';
 
 export interface Cycle {
   id: string;
@@ -104,7 +87,7 @@ export interface Cycle {
 
 // ─── Contribution obligations ──────────────────────────────────────────────────
 
-export type ObligationStatus = "PENDING" | "PAID" | "OVERDUE" | "PARTIAL";
+export type ObligationStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'PARTIAL';
 
 export interface ContributionObligation {
   id: string;
@@ -123,12 +106,7 @@ export interface ContributionObligation {
 
 // ─── Payments ──────────────────────────────────────────────────────────────────
 
-export type PaymentStatus =
-  | "INITIATED"
-  | "PENDING"
-  | "SUCCESS"
-  | "FAILED"
-  | "CANCELLED";
+export type PaymentStatus = 'INITIATED' | 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED';
 
 export interface PaymentRecord {
   id: string;
@@ -148,11 +126,7 @@ export interface PaymentRecord {
 // ─── Payouts ───────────────────────────────────────────────────────────────────
 
 export type PayoutStatus =
-  | "PENDING"
-  | "PROCESSING"
-  | "AWAITING_ADMIN_APPROVAL"
-  | "COMPLETED"
-  | "FAILED";
+  'PENDING' | 'PROCESSING' | 'AWAITING_ADMIN_APPROVAL' | 'COMPLETED' | 'FAILED';
 
 export interface PayoutAccount {
   bankCode: string; // e.g. "cbe", "656", "telebirr"
@@ -201,10 +175,7 @@ export interface PayoutDraw {
 // ─── Ledger ────────────────────────────────────────────────────────────────────
 
 export type LedgerEntryType =
-  | "CONTRIBUTION_RECEIVED"
-  | "PENALTY_APPLIED"
-  | "PAYOUT_OBLIGATION"
-  | "PAYOUT_COMPLETED";
+  'CONTRIBUTION_RECEIVED' | 'PENALTY_APPLIED' | 'PAYOUT_OBLIGATION' | 'PAYOUT_COMPLETED';
 
 export interface LedgerEntry {
   id: string;
@@ -217,7 +188,7 @@ export interface LedgerEntry {
   currency: Currency;
   description: string;
   referenceId: string;
-  referenceType: "payment" | "payout" | "penalty" | "obligation";
+  referenceType: 'payment' | 'payout' | 'penalty' | 'obligation';
   createdAt: string;
   createdBy: string;
 }
@@ -225,33 +196,33 @@ export interface LedgerEntry {
 // ─── Audit log ─────────────────────────────────────────────────────────────────
 
 export type AuditAction =
-  | "EQUB_CREATED"
-  | "EQUB_UPDATED"
-  | "EQUB_DELETED"
-  | "EQUB_OPENED"
-  | "MEMBER_JOINED"
-  | "MEMBER_APPROVED"
-  | "PAYOUT_ELIGIBILITY_EXCEPTION_GRANTED"
-  | "MEMBER_REJECTED"
-  | "MEMBER_WITHDRAWN"
-  | "EQUB_LOCKED"
-  | "EQUB_ACTIVATED"
-  | "CYCLE_CREATED"
-  | "PAYOUT_DRAW_STARTED"
-  | "PAYOUT_RECIPIENT_SELECTED"
-  | "CONTRIBUTION_CREATED"
-  | "PAYMENT_INITIATED"
-  | "PAYMENT_VERIFIED"
-  | "PAYMENT_FAILED"
-  | "PAYOUT_CREATED"
-  | "PAYOUT_COMPLETED"
-  | "PAYOUT_TRANSFER_INITIATED"
-  | "PAYOUT_TRANSFER_AWAITING_APPROVAL"
-  | "PAYOUT_TRANSFER_FAILED"
-  | "MEMBER_REMOVED"
-  | "EQUB_CANCELLED"
-  | "EQUB_PAUSED"
-  | "EQUB_COMPLETED";
+  | 'EQUB_CREATED'
+  | 'EQUB_UPDATED'
+  | 'EQUB_DELETED'
+  | 'EQUB_OPENED'
+  | 'MEMBER_JOINED'
+  | 'MEMBER_APPROVED'
+  | 'PAYOUT_ELIGIBILITY_EXCEPTION_GRANTED'
+  | 'MEMBER_REJECTED'
+  | 'MEMBER_WITHDRAWN'
+  | 'EQUB_LOCKED'
+  | 'EQUB_ACTIVATED'
+  | 'CYCLE_CREATED'
+  | 'PAYOUT_DRAW_STARTED'
+  | 'PAYOUT_RECIPIENT_SELECTED'
+  | 'CONTRIBUTION_CREATED'
+  | 'PAYMENT_INITIATED'
+  | 'PAYMENT_VERIFIED'
+  | 'PAYMENT_FAILED'
+  | 'PAYOUT_CREATED'
+  | 'PAYOUT_COMPLETED'
+  | 'PAYOUT_TRANSFER_INITIATED'
+  | 'PAYOUT_TRANSFER_AWAITING_APPROVAL'
+  | 'PAYOUT_TRANSFER_FAILED'
+  | 'MEMBER_REMOVED'
+  | 'EQUB_CANCELLED'
+  | 'EQUB_PAUSED'
+  | 'EQUB_COMPLETED';
 
 export interface AuditLogEntry {
   id: string;
@@ -268,23 +239,23 @@ export interface AuditLogEntry {
 // ─── Notifications ─────────────────────────────────────────────────────────────
 
 export type NotificationType =
-  | "CONTRIBUTION_DUE"
-  | "CONTRIBUTION_OVERDUE"
-  | "PAYMENT_SUCCESS"
-  | "PAYMENT_FAILED"
-  | "PAYOUT_RECEIVED"
-  | "PAYOUT_PROCESSING"
-  | "PAYOUT_ACTION_REQUIRED"
-  | "PAYOUT_DRAW_RESULT"
-  | "MEMBERSHIP_REQUESTED"
-  | "MEMBERSHIP_APPROVED"
-  | "MEMBERSHIP_REJECTED"
-  | "MEMBERSHIP_WITHDRAWN"
-  | "EQUB_START_DATE_CHANGED"
-  | "EQUB_LOCKED"
-  | "CYCLE_DUE"
-  | "CYCLE_WAITING_ELIGIBILITY"
-  | "GENERAL";
+  | 'CONTRIBUTION_DUE'
+  | 'CONTRIBUTION_OVERDUE'
+  | 'PAYMENT_SUCCESS'
+  | 'PAYMENT_FAILED'
+  | 'PAYOUT_RECEIVED'
+  | 'PAYOUT_PROCESSING'
+  | 'PAYOUT_ACTION_REQUIRED'
+  | 'PAYOUT_DRAW_RESULT'
+  | 'MEMBERSHIP_REQUESTED'
+  | 'MEMBERSHIP_APPROVED'
+  | 'MEMBERSHIP_REJECTED'
+  | 'MEMBERSHIP_WITHDRAWN'
+  | 'EQUB_START_DATE_CHANGED'
+  | 'EQUB_LOCKED'
+  | 'CYCLE_DUE'
+  | 'CYCLE_WAITING_ELIGIBILITY'
+  | 'GENERAL';
 
 export interface Notification {
   id: string;
@@ -311,4 +282,3 @@ export interface UserProfile {
   createdAt: string;
   updatedAt: string;
 }
-

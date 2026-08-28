@@ -1,8 +1,8 @@
-import type { NextRequest } from "next/server";
+import type { NextRequest } from 'next/server';
 
-export const TEST_DATE_COOKIE = "equb-test-date";
-export const TEST_DATE_STORAGE_KEY = "equb-test-date";
-export const TEST_DATE_HEADER = "x-equb-test-date";
+export const TEST_DATE_COOKIE = 'equb-test-date';
+export const TEST_DATE_STORAGE_KEY = 'equb-test-date';
+export const TEST_DATE_HEADER = 'x-equb-test-date';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -17,21 +17,21 @@ export function getTodayIsoDate(): string {
 }
 
 export function getBrowserTestDate(): string | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
 
   const stored = window.localStorage.getItem(TEST_DATE_STORAGE_KEY);
   if (isValidIsoDate(stored)) return stored;
 
   const match = document.cookie
-    .split("; ")
+    .split('; ')
     .find((entry) => entry.startsWith(`${TEST_DATE_COOKIE}=`));
-  const cookieValue = match ? decodeURIComponent(match.split("=").slice(1).join("=")) : null;
+  const cookieValue = match ? decodeURIComponent(match.split('=').slice(1).join('=')) : null;
 
   return isValidIsoDate(cookieValue) ? cookieValue : null;
 }
 
 export function setBrowserTestDate(value: string | null): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
 
   if (isValidIsoDate(value)) {
     window.localStorage.setItem(TEST_DATE_STORAGE_KEY, value);

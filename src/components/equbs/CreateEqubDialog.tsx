@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/Button";
+import { Button } from '@/components/ui/Button';
 import {
   Dialog,
   DialogContent,
@@ -9,19 +9,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/Input";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/Input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { getBrowserTestDate, getTodayIsoDate } from "@/lib/testClock";
-import { Plus, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+} from '@/components/ui/select';
+import { getBrowserTestDate, getTodayIsoDate } from '@/lib/testClock';
+import { Plus, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export function CreateEqubDialog({
   token,
@@ -32,12 +32,12 @@ export function CreateEqubDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [form, setForm] = useState({
-    name: "",
-    description: "",
+    name: '',
+    description: '',
     contributionAmount: 1000,
-    frequency: "MONTHLY" as "WEEKLY" | "MONTHLY",
+    frequency: 'MONTHLY' as 'WEEKLY' | 'MONTHLY',
     memberLimit: 10,
     minimumMemberCount: 2,
     startDate: getTodayIsoDate(),
@@ -55,12 +55,12 @@ export function CreateEqubDialog({
     if (!token) return;
 
     setLoading(true);
-    setError("");
+    setError('');
 
-    const res = await fetch("/api/equbs", {
-      method: "POST",
+    const res = await fetch('/api/equbs', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
@@ -73,11 +73,11 @@ export function CreateEqubDialog({
     if (res.ok) {
       const { equb } = await res.json();
       setOpen(false);
-      toast.success("Equb created successfully!");
+      toast.success('Equb created successfully!');
       onCreated(equb.id);
     } else {
       const body = await res.json().catch(() => null);
-      const message = body?.error ?? "Unable to create Equb.";
+      const message = body?.error ?? 'Unable to create Equb.';
       setError(message);
       toast.error(message);
     }
@@ -90,16 +90,16 @@ export function CreateEqubDialog({
       <DialogTrigger asChild>
         <Button
           type="button"
-          className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold shadow-lg shadow-emerald-500/20 text-xs px-4 py-2"
+          className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
         >
           <Plus className="mr-1.5 size-4" />
           Create Equb
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl rounded-3xl border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xl">
+      <DialogContent className="rounded-3xl border-slate-200 bg-white text-slate-900 shadow-2xl sm:max-w-2xl dark:border-white/10 dark:bg-slate-900 dark:text-white">
         <DialogHeader>
-          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">
-            <Sparkles className="w-4 h-4" />
+          <div className="mb-1 flex items-center gap-2 text-xs font-bold tracking-wider text-emerald-600 uppercase dark:text-emerald-400">
+            <Sparkles className="h-4 w-4" />
             <span>New Rotating Savings Group</span>
           </div>
           <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-white">
@@ -110,7 +110,7 @@ export function CreateEqubDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           {error && (
             <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-600 dark:text-red-300">
               {error}
@@ -132,7 +132,7 @@ export function CreateEqubDialog({
                 }
                 required
                 placeholder="e.g. Bole Entrepreneurs Monthly Equb"
-                className="rounded-xl border-slate-300 dark:border-white/10 bg-white dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm"
+                className="rounded-xl border-slate-300 bg-white text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800/60 dark:text-white"
               />
             </div>
 
@@ -148,7 +148,7 @@ export function CreateEqubDialog({
                     description: event.target.value,
                   }))
                 }
-                className="min-h-20 w-full rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                className="min-h-20 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-slate-800/60 dark:text-white dark:placeholder:text-slate-500"
                 placeholder="Details on member eligibility, rules, and purpose…"
               />
             </div>
@@ -168,7 +168,7 @@ export function CreateEqubDialog({
                   }))
                 }
                 required
-                className="rounded-xl border-slate-300 dark:border-white/10 bg-white dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm"
+                className="rounded-xl border-slate-300 bg-white text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800/60 dark:text-white"
               />
             </div>
 
@@ -181,7 +181,7 @@ export function CreateEqubDialog({
                 onValueChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    frequency: value as "WEEKLY" | "MONTHLY",
+                    frequency: value as 'WEEKLY' | 'MONTHLY',
                   }))
                 }
               >
@@ -208,14 +208,11 @@ export function CreateEqubDialog({
                   setForm((current) => ({
                     ...current,
                     memberLimit: next,
-                    minimumMemberCount: Math.min(
-                      current.minimumMemberCount,
-                      next,
-                    ),
+                    minimumMemberCount: Math.min(current.minimumMemberCount, next),
                   }));
                 }}
                 required
-                className="rounded-xl border-slate-300 dark:border-white/10 bg-white dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm"
+                className="rounded-xl border-slate-300 bg-white text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800/60 dark:text-white"
               />
             </div>
 
@@ -235,7 +232,7 @@ export function CreateEqubDialog({
                   }))
                 }
                 required
-                className="rounded-xl border-slate-300 dark:border-white/10 bg-white dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm"
+                className="rounded-xl border-slate-300 bg-white text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800/60 dark:text-white"
               />
             </div>
 
@@ -253,7 +250,7 @@ export function CreateEqubDialog({
                   }))
                 }
                 required
-                className="rounded-xl border-slate-300 dark:border-white/10 bg-white dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm"
+                className="rounded-xl border-slate-300 bg-white text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800/60 dark:text-white"
               />
             </div>
           </div>
@@ -270,7 +267,7 @@ export function CreateEqubDialog({
             <Button
               type="submit"
               loading={loading}
-              className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold px-5 text-xs shadow-md shadow-emerald-500/20"
+              className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-5 text-xs font-bold text-white shadow-md shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
             >
               Create Equb Group
             </Button>

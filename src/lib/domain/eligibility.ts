@@ -1,4 +1,4 @@
-import type { ContributionObligation, Membership } from "./types";
+import type { ContributionObligation, Membership } from './types';
 
 export interface EligibilityContext {
   membership: Membership;
@@ -10,19 +10,15 @@ export function isEligibleForPayout(ctx: EligibilityContext): boolean {
   const { membership, obligationsForCycle, allObligations } = ctx;
 
   if (membership.hasReceivedPayout) return false;
-  if (!["ACTIVE", "APPROVED"].includes(membership.status)) return false;
+  if (!['ACTIVE', 'APPROVED'].includes(membership.status)) return false;
 
   if (membership.payoutEligibilityException) return true;
 
-  const cycleObligation = obligationsForCycle.find(
-    (o) => o.membershipId === membership.id,
-  );
-  if (cycleObligation && cycleObligation.status !== "PAID") return false;
+  const cycleObligation = obligationsForCycle.find((o) => o.membershipId === membership.id);
+  if (cycleObligation && cycleObligation.status !== 'PAID') return false;
 
   const hasOverdue = allObligations.some(
-    (o) =>
-      o.membershipId === membership.id &&
-      (o.status === "OVERDUE" || o.status === "PARTIAL"),
+    (o) => o.membershipId === membership.id && (o.status === 'OVERDUE' || o.status === 'PARTIAL'),
   );
   if (hasOverdue) return false;
 
@@ -46,23 +42,18 @@ export function getEligibleMembers(
 export function getIneligibilityReason(ctx: EligibilityContext): string | null {
   const { membership, obligationsForCycle, allObligations } = ctx;
 
-  if (membership.hasReceivedPayout) return "Already received payout";
-  if (!["ACTIVE", "APPROVED"].includes(membership.status))
-    return "Membership not active";
+  if (membership.hasReceivedPayout) return 'Already received payout';
+  if (!['ACTIVE', 'APPROVED'].includes(membership.status)) return 'Membership not active';
 
   if (membership.payoutEligibilityException) return null;
 
-  const cycleObligation = obligationsForCycle.find(
-    (o) => o.membershipId === membership.id,
-  );
-  if (cycleObligation && cycleObligation.status !== "PAID") {
-    return "Current cycle contribution not paid";
+  const cycleObligation = obligationsForCycle.find((o) => o.membershipId === membership.id);
+  if (cycleObligation && cycleObligation.status !== 'PAID') {
+    return 'Current cycle contribution not paid';
   }
 
   const overdueCount = allObligations.filter(
-    (o) =>
-      o.membershipId === membership.id &&
-      (o.status === "OVERDUE" || o.status === "PARTIAL"),
+    (o) => o.membershipId === membership.id && (o.status === 'OVERDUE' || o.status === 'PARTIAL'),
   ).length;
   if (overdueCount > 0) return `${overdueCount} overdue contribution(s)`;
 

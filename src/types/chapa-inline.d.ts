@@ -1,4 +1,4 @@
-declare module "@chapa_et/inline.js" {
+declare module '@chapa_et/inline.js' {
   const ChapaCheckout: new (options: Record<string, unknown>) => {
     initialize(containerId: string): void;
   };
@@ -6,7 +6,7 @@ declare module "@chapa_et/inline.js" {
   export default ChapaCheckout;
 }
 
-declare module "@chapa_et/inline.js/lib/inline.js" {
+declare module '@chapa_et/inline.js/lib/inline.js' {
   const ChapaCheckout: new (options: Record<string, unknown>) => {
     initialize(containerId: string): void;
   };

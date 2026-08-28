@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin, getUserProfile } from "@/lib/firebase/auth";
-import { getEqub } from "@/lib/services/equbService";
-import { getAllAuditLogs } from "@/lib/services/auditService";
-import type { AuditLogEntry } from "@/lib/domain/types";
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin, getUserProfile } from '@/lib/firebase/auth';
+import { getEqub } from '@/lib/services/equbService';
+import { getAllAuditLogs } from '@/lib/services/auditService';
+import type { AuditLogEntry } from '@/lib/domain/types';
 
 type EnrichedAuditLog = AuditLogEntry & {
   equbName: string;
@@ -12,14 +12,12 @@ type EnrichedAuditLog = AuditLogEntry & {
 
 export async function GET(request: NextRequest) {
   try {
-    await requireAdmin(request.headers.get("authorization"));
+    await requireAdmin(request.headers.get('authorization'));
     const logs = await getAllAuditLogs(300);
 
-    const equbIds = Array.from(
-      new Set(logs.map((log) => log.equbId).filter(Boolean) as string[]),
-    );
+    const equbIds = Array.from(new Set(logs.map((log) => log.equbId).filter(Boolean) as string[]));
     const actorIds = Array.from(
-      new Set(logs.map((log) => log.actorId).filter((actorId) => actorId !== "system")),
+      new Set(logs.map((log) => log.actorId).filter((actorId) => actorId !== 'system')),
     );
 
     const actorProfiles = await Promise.all(
@@ -43,10 +41,9 @@ export async function GET(request: NextRequest) {
       const equb = log.equbId ? equbMap.get(log.equbId) : null;
       return {
         ...log,
-        equbName: equb?.name ?? "System",
-        actorName:
-          actor?.displayName ?? (log.actorId === "system" ? "System" : log.actorId),
-        actorEmail: actor?.email ?? "",
+        equbName: equb?.name ?? 'System',
+        actorName: actor?.displayName ?? (log.actorId === 'system' ? 'System' : log.actorId),
+        actorEmail: actor?.email ?? '',
       };
     });
 
@@ -55,7 +52,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unauthorized" },
+      { error: error instanceof Error ? error.message : 'Unauthorized' },
       { status: 401 },
     );
   }

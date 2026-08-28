@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/Button";
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/Button';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,14 +18,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/Input";
-import {
-  getBrowserTestDate,
-  getTodayIsoDate,
-  setBrowserTestDate,
-} from "@/lib/testClock";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/Input';
+import { getBrowserTestDate, getTodayIsoDate, setBrowserTestDate } from '@/lib/testClock';
+import { cn } from '@/lib/utils';
 import {
   Bell,
   CalendarRange,
@@ -38,12 +34,12 @@ import {
   Sun,
   Wallet,
   WalletCards,
-} from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
-import { ComponentType, useEffect, useState } from "react";
-import { toast } from "sonner";
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useTheme } from 'next-themes';
+import { ComponentType, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface NavLink {
   href: string;
@@ -63,13 +59,13 @@ interface NavbarProps {
 }
 
 function getInitials(name?: string) {
-  if (!name) return "U";
+  if (!name) return 'U';
   return name
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
 }
 
 function ThemeToggle() {
@@ -82,23 +78,26 @@ function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <button className="h-9 w-9 rounded-xl border border-white/10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:border-emerald-500/40 hover:text-emerald-500" aria-label="Toggle theme">
-        <span className="w-4 h-4 rounded-full" />
+      <button
+        className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-slate-500 hover:border-emerald-500/40 hover:text-emerald-500 dark:text-slate-400"
+        aria-label="Toggle theme"
+      >
+        <span className="h-4 w-4 rounded-full" />
       </button>
     );
   }
 
-  const isDark = theme === "dark";
+  const isDark = theme === 'dark';
 
   return (
     <button
       type="button"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      className="h-9 w-9 cursor rounded-xl border border-slate-200/60 dark:border-white/10 border-slate-200/60 bg-slate-50 dark:bg-white/5 hover:border-emerald-500/40! hover:text-emerald-500! hover:bg-white/10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-emerald-400 transition-all duration-200"
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      className="cursor flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200/60 bg-slate-50 text-slate-500 transition-all duration-200 hover:border-emerald-500/40! hover:bg-white/10 hover:text-emerald-400 hover:text-emerald-500! dark:border-white/10 dark:bg-white/5 dark:text-slate-400"
     >
-      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
   );
 }
@@ -121,9 +120,9 @@ function TestDateDialog() {
           type="button"
           variant="secondary"
           size="icon"
-          className="h-9 w-9 rounded-xl border border-slate-200/60 bg-slate-50 dark:border-white/15 dark:bg-white/5 hover:bg-white/10! text-slate-500 dark:text-slate-400 hover:border-emerald-500/40! hover:text-emerald-500! transition-all"
+          className="h-9 w-9 rounded-xl border border-slate-200/60 bg-slate-50 text-slate-500 transition-all hover:border-emerald-500/40! hover:bg-white/10! hover:text-emerald-500! dark:border-white/15 dark:bg-white/5 dark:text-slate-400"
           aria-label="Set test date"
-          title={activeDate ? `Test date: ${activeDate}` : "Set test date"}
+          title={activeDate ? `Test date: ${activeDate}` : 'Set test date'}
         >
           <CalendarRange className="size-4" />
         </Button>
@@ -137,13 +136,9 @@ function TestDateDialog() {
         </DialogHeader>
         <div className="space-y-2">
           <label className="text-sm font-medium">Date</label>
-          <Input
-            type="date"
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Current override: {activeDate ?? "Using the real date"}
+          <Input type="date" value={value} onChange={(event) => setValue(event.target.value)} />
+          <p className="text-muted-foreground text-xs">
+            Current override: {activeDate ?? 'Using the real date'}
           </p>
         </div>
         <DialogFooter>
@@ -155,7 +150,7 @@ function TestDateDialog() {
               setActiveDate(null);
               setValue(getTodayIsoDate());
               setOpen(false);
-              toast.success("Test date cleared");
+              toast.success('Test date cleared');
               window.location.reload();
             }}
           >
@@ -165,7 +160,7 @@ function TestDateDialog() {
             type="button"
             onClick={() => {
               if (!value) {
-                toast.error("Pick a date first");
+                toast.error('Pick a date first');
                 return;
               }
               setBrowserTestDate(value);
@@ -188,43 +183,43 @@ export function Navbar({
   userName,
   isAdmin = false,
   searchHref,
-  searchLabel = "Search Equbs",
-  notificationsHref = "/notifications",
+  searchLabel = 'Search Equbs',
+  notificationsHref = '/notifications',
   notificationCount,
   onSignOut,
 }: NavbarProps) {
   const pathname = usePathname();
   const authenticated = Boolean(userName);
-  const showDashboard = authenticated && pathname !== "/";
+  const showDashboard = authenticated && pathname !== '/';
   const showAuditLogs = authenticated && isAdmin;
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/10 dark:border-white/10 border-slate-200/60 bg-white/85 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm shadow-black/5">
+    <nav className="sticky top-0 z-50 border-b border-slate-200/60 border-white/10 bg-white/85 shadow-sm shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Logo + Nav Links */}
         <div className="flex min-w-0 items-center gap-5">
           <Link
             href="/"
-            className="flex items-center gap-2 text-lg font-extrabold text-slate-900 dark:text-white tracking-tight mr-2 shrink-0"
+            className="mr-2 flex shrink-0 items-center gap-2 text-lg font-extrabold tracking-tight text-slate-900 dark:text-white"
           >
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-sm">
-              <Wallet className="w-4 h-4" />
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-sm">
+              <Wallet className="h-4 w-4" />
             </span>
             <span className="hidden sm:inline">Equb</span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden items-center gap-1 md:flex">
             {authenticated && (
               <Link
                 href="/dashboard"
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
-                  pathname === "/dashboard"
-                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                    : "text-slate-600 dark:text-slate-300 hover:bg-white/10 hover:text-slate-900 dark:hover:text-white"
+                  'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-all duration-200',
+                  pathname === '/dashboard'
+                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                    : 'text-slate-600 hover:bg-white/10 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white',
                 )}
               >
-                <LayoutDashboard className="w-4 h-4" />
+                <LayoutDashboard className="h-4 w-4" />
                 Dashboard
               </Link>
             )}
@@ -232,13 +227,13 @@ export function Navbar({
               <Link
                 href="/admin/audit"
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
-                  pathname === "/admin/audit"
-                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                    : "text-slate-600 dark:text-slate-300 hover:bg-white/10 hover:text-slate-900 dark:hover:text-white"
+                  'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-all duration-200',
+                  pathname === '/admin/audit'
+                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                    : 'text-slate-600 hover:bg-white/10 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white',
                 )}
               >
-                <FileClock className="w-4 h-4" />
+                <FileClock className="h-4 w-4" />
                 Audit Logs
               </Link>
             )}
@@ -246,13 +241,13 @@ export function Navbar({
               <Link
                 href="/financial-activities"
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
-                  pathname === "/financial-activities"
-                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                    : "text-slate-600 dark:text-slate-300 hover:bg-white/10 hover:text-slate-900 dark:hover:text-white"
+                  'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-all duration-200',
+                  pathname === '/financial-activities'
+                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                    : 'text-slate-600 hover:bg-white/10 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white',
                 )}
               >
-                <WalletCards className="w-4 h-4" />
+                <WalletCards className="h-4 w-4" />
                 Finances
               </Link>
             )}
@@ -261,10 +256,10 @@ export function Navbar({
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
-                  pathname === link.href || pathname.startsWith(link.href + "/")
-                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                    : "text-slate-600 dark:text-slate-300 hover:bg-white/10 hover:text-slate-900 dark:hover:text-white"
+                  'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-all duration-200',
+                  pathname === link.href || pathname.startsWith(link.href + '/')
+                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                    : 'text-slate-600 hover:bg-white/10 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white',
                 )}
               >
                 {link.label}
@@ -277,9 +272,7 @@ export function Navbar({
         {/* Right Actions */}
         <div className="flex items-center gap-2">
           {/* Dev only: test date */}
-          {authenticated && process.env.NODE_ENV !== "production" && (
-            <TestDateDialog />
-          )}
+          {authenticated && process.env.NODE_ENV !== 'production' && <TestDateDialog />}
 
           {/* Theme toggle */}
           <ThemeToggle />
@@ -288,7 +281,7 @@ export function Navbar({
           {authenticated && searchHref && (
             <Link
               href={searchHref}
-              className="hidden sm:inline-flex max-w-[min(14rem,40vw)] items-center gap-2 rounded-xl border border-slate-200/60 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3.5 py-2 text-sm font-medium text-slate-500 dark:text-slate-400 transition-all hover:border-emerald-500/40 hover:text-emerald-600 dark:hover:text-emerald-400"
+              className="hidden max-w-[min(14rem,40vw)] items-center gap-2 rounded-xl border border-slate-200/60 bg-slate-50 px-3.5 py-2 text-sm font-medium text-slate-500 transition-all hover:border-emerald-500/40 hover:text-emerald-600 sm:inline-flex dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:text-emerald-400"
             >
               <Search className="h-4 w-4 shrink-0" />
               <span className="truncate">{searchLabel}</span>
@@ -301,12 +294,12 @@ export function Navbar({
               href={notificationsHref}
               aria-label="Notifications"
               title="Notifications"
-              className="relative hover:bg-white/10! inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200/60 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 hover:border-emerald-500/40! hover:text-emerald-500! transition-all"
+              className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200/60 bg-slate-50 text-slate-500 transition-all hover:border-emerald-500/40! hover:bg-white/10! hover:text-emerald-500! dark:border-white/10 dark:bg-white/5 dark:text-slate-400"
             >
               <Bell className="h-4 w-4" />
-              {typeof notificationCount === "number" && notificationCount > 0 && (
-                <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm">
-                  {notificationCount > 99 ? "99+" : notificationCount}
+              {typeof notificationCount === 'number' && notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-1 text-[10px] leading-none font-bold text-white shadow-sm">
+                  {notificationCount > 99 ? '99+' : notificationCount}
                 </span>
               )}
             </Link>
@@ -318,39 +311,39 @@ export function Navbar({
               <DropdownMenuTrigger
                 aria-label="Profile menu"
                 title={userName}
-                className="rounded-full ring-2 ring-transparent hover:ring-emerald-500/30 focus:outline-hidden transition-all duration-200"
+                className="rounded-full ring-2 ring-transparent transition-all duration-200 hover:ring-emerald-500/30 focus:outline-hidden"
               >
                 <Avatar className="size-9 border border-emerald-500/20 shadow-sm">
-                  <AvatarFallback className="bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold text-sm tracking-wider">
+                  <AvatarFallback className="bg-gradient-to-tr from-emerald-600 to-teal-500 text-sm font-bold tracking-wider text-white">
                     {getInitials(userName)}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="translate-y-2.75 w-50 p-2 rounded-2xl border border-slate-200/90 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xl shadow-slate-200/60 dark:shadow-black/10"
+                className="w-50 translate-y-2.75 rounded-2xl border border-slate-200/90 bg-white/95 p-2 shadow-xl shadow-slate-200/60 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/95 dark:shadow-black/10"
               >
                 <DropdownMenuLabel className="p-2">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9 border border-emerald-500/20 shrink-0">
-                      <AvatarFallback className="bg-gradient-to-tr from-emerald-600 to-teal-500 text-white text-xs font-bold">
+                    <Avatar className="h-9 w-9 shrink-0 border border-emerald-500/20">
+                      <AvatarFallback className="bg-gradient-to-tr from-emerald-600 to-teal-500 text-xs font-bold text-white">
                         {getInitials(userName)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      <p className="truncate text-xs font-bold text-slate-900 dark:text-white">
                         {userName}
                       </p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="mt-0.5 flex items-center gap-1.5">
                         <span
                           className={cn(
-                            "inline-flex items-center px-1.5 py-0.2 rounded-md text-[10px] font-bold uppercase tracking-wider",
+                            'py-0.2 inline-flex items-center rounded-md px-1.5 text-[10px] font-bold tracking-wider uppercase',
                             isAdmin
-                              ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20"
-                              : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
+                              ? 'border border-amber-500/20 bg-amber-500/15 text-amber-700 dark:text-amber-400'
+                              : 'border border-emerald-500/20 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
                           )}
                         >
-                          {isAdmin ? "Admin" : "Member"}
+                          {isAdmin ? 'Admin' : 'Member'}
                         </span>
                       </div>
                     </div>
@@ -360,9 +353,9 @@ export function Navbar({
                 {showDashboard && (
                   <DropdownMenuItem
                     onClick={() => {
-                      window.location.href = "/dashboard";
+                      window.location.href = '/dashboard';
                     }}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-600 dark:focus:text-emerald-400 cursor-pointer transition-colors"
+                    className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-emerald-500/10 hover:text-emerald-600 focus:bg-emerald-500/10 focus:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400 dark:focus:text-emerald-400"
                   >
                     <LayoutDashboard className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     Dashboard
@@ -370,27 +363,26 @@ export function Navbar({
                 )}
                 <DropdownMenuItem
                   onClick={() => {
-                    window.location.href = "/notifications";
+                    window.location.href = '/notifications';
                   }}
-                  className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-600 dark:focus:text-emerald-400 cursor-pointer transition-colors"
+                  className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-emerald-500/10 hover:text-emerald-600 focus:bg-emerald-500/10 focus:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400 dark:focus:text-emerald-400"
                 >
                   <div className="flex items-center gap-2.5">
                     <Bell className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     Notifications
                   </div>
-                  {typeof notificationCount === "number" &&
-                    notificationCount > 0 && (
-                      <span className="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-white">
-                        {notificationCount}
-                      </span>
-                    )}
+                  {typeof notificationCount === 'number' && notificationCount > 0 && (
+                    <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-white">
+                      {notificationCount}
+                    </span>
+                  )}
                 </DropdownMenuItem>
                 {authenticated && !isAdmin && (
                   <DropdownMenuItem
                     onClick={() => {
-                      window.location.href = "/financial-activities";
+                      window.location.href = '/financial-activities';
                     }}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-600 dark:focus:text-emerald-400 cursor-pointer transition-colors"
+                    className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-emerald-500/10 hover:text-emerald-600 focus:bg-emerald-500/10 focus:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400 dark:focus:text-emerald-400"
                   >
                     <WalletCards className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     Finances
@@ -399,9 +391,9 @@ export function Navbar({
                 {showAuditLogs && (
                   <DropdownMenuItem
                     onClick={() => {
-                      window.location.href = "/admin/audit";
+                      window.location.href = '/admin/audit';
                     }}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-600 dark:focus:text-emerald-400 cursor-pointer transition-colors"
+                    className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-emerald-500/10 hover:text-emerald-600 focus:bg-emerald-500/10 focus:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400 dark:focus:text-emerald-400"
                   >
                     <FileClock className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     Audit Logs
@@ -409,9 +401,9 @@ export function Navbar({
                 )}
                 <DropdownMenuItem
                   onClick={() => {
-                    window.location.href = "/settings";
+                    window.location.href = '/settings';
                   }}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 focus:bg-emerald-500/10 focus:text-emerald-600 dark:focus:text-emerald-400 cursor-pointer transition-colors"
+                  className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-emerald-500/10 hover:text-emerald-600 focus:bg-emerald-500/10 focus:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400 dark:focus:text-emerald-400"
                 >
                   <Settings className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   Settings
@@ -421,7 +413,7 @@ export function Navbar({
                     <DropdownMenuSeparator className="my-1.5 border-t border-slate-200/80 dark:border-white/10" />
                     <DropdownMenuItem
                       onClick={onSignOut}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 focus:bg-rose-50 dark:focus:bg-rose-500/10 focus:text-rose-600 dark:focus:text-rose-400 cursor-pointer transition-colors"
+                      className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 focus:bg-rose-50 focus:text-rose-600 dark:text-rose-400 dark:hover:bg-rose-500/10 dark:focus:bg-rose-500/10 dark:focus:text-rose-400"
                     >
                       <LogOut className="h-4 w-4" />
                       Sign out
@@ -437,13 +429,13 @@ export function Navbar({
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="rounded-xl px-3.5 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+                className="rounded-xl px-3.5 py-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
               >
                 Sign in
               </Link>
               <Link
                 href="/register"
-                className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500 transition-all"
+                className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-500/20 transition-all hover:from-emerald-400 hover:to-teal-500"
               >
                 Get started
               </Link>

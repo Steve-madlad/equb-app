@@ -1,4 +1,4 @@
-import type { Membership } from "@/lib/domain/types";
+import type { Membership } from '@/lib/domain/types';
 
 export interface DrawResult {
   selectedMembership: Membership;
@@ -9,8 +9,5 @@ export interface DrawResult {
 
 export interface PayoutSelectionStrategy {
   readonly name: string;
-  selectRecipient(
-    eligibleMembers: Membership[],
-    drawId: string
-  ): DrawResult;
+  selectRecipient(eligibleMembers: Membership[], drawId: string): DrawResult;
 }

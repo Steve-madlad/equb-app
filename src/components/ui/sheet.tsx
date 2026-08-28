@@ -1,30 +1,24 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Dialog as DialogPrimitive } from "radix-ui";
-import { X } from "lucide-react";
+import * as React from 'react';
+import { Dialog as DialogPrimitive } from 'radix-ui';
+import { X } from 'lucide-react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 function Sheet({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="sheet" {...props} />;
 }
 
-function SheetTrigger({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
+function SheetTrigger({ ...props }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
   return <DialogPrimitive.Trigger data-slot="sheet-trigger" {...props} />;
 }
 
-function SheetClose({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Close>) {
+function SheetClose({ ...props }: React.ComponentProps<typeof DialogPrimitive.Close>) {
   return <DialogPrimitive.Close data-slot="sheet-close" {...props} />;
 }
 
-function SheetPortal({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+function SheetPortal({ ...props }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
   return <DialogPrimitive.Portal data-slot="sheet-portal" {...props} />;
 }
 
@@ -36,7 +30,7 @@ function SheetOverlay({
     <DialogPrimitive.Overlay
       data-slot="sheet-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
+        'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px]',
         className,
       )}
       {...props}
@@ -45,16 +39,16 @@ function SheetOverlay({
 }
 
 const sheetVariants = {
-  top: "inset-x-0 top-0 border-b data-[state=open]:slide-in-from-top data-[state=closed]:slide-out-to-top",
+  top: 'inset-x-0 top-0 border-b data-[state=open]:slide-in-from-top data-[state=closed]:slide-out-to-top',
   bottom:
-    "inset-x-0 bottom-0 border-t data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
-  left: "inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left",
+    'inset-x-0 bottom-0 border-t data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
+  left: 'inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left',
   right:
-    "inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-lg data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right",
+    'inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-lg data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right',
 } as const;
 
 function SheetContent({
-  side = "right",
+  side = 'right',
   className,
   children,
   ...props
@@ -67,14 +61,14 @@ function SheetContent({
       <DialogPrimitive.Content
         data-slot="sheet-content"
         className={cn(
-          "fixed z-50 flex flex-col gap-4 bg-background shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out",
+          'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out',
           sheetVariants[side],
           className,
         )}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+        <DialogPrimitive.Close className="focus:ring-ring absolute top-4 right-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none">
           <X className="size-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
@@ -83,34 +77,34 @@ function SheetContent({
   );
 }
 
-function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
+function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="sheet-header"
-      className={cn("flex flex-col gap-2 px-6 pt-6 text-left", className)}
+      className={cn('flex flex-col gap-2 px-6 pt-6 text-left', className)}
       {...props}
     />
   );
 }
 
-function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
+function SheetFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="sheet-footer"
-      className={cn("mt-auto flex flex-col gap-2 px-6 pb-6 pt-2 sm:flex-row sm:justify-end", className)}
+      className={cn(
+        'mt-auto flex flex-col gap-2 px-6 pt-2 pb-6 sm:flex-row sm:justify-end',
+        className,
+      )}
       {...props}
     />
   );
 }
 
-function SheetTitle({
-  className,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+function SheetTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
       data-slot="sheet-title"
-      className={cn("text-lg font-semibold leading-none tracking-tight", className)}
+      className={cn('text-lg leading-none font-semibold tracking-tight', className)}
       {...props}
     />
   );
@@ -123,7 +117,7 @@ function SheetDescription({
   return (
     <DialogPrimitive.Description
       data-slot="sheet-description"
-      className={cn("text-sm text-muted-foreground", className)}
+      className={cn('text-muted-foreground text-sm', className)}
       {...props}
     />
   );

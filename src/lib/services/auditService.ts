@@ -1,6 +1,6 @@
-import { v4 as uuidv4 } from "uuid";
-import { COLLECTIONS, getAdminDb } from "@/lib/firebase/admin";
-import type { AuditAction, AuditLogEntry } from "@/lib/domain/types";
+import { v4 as uuidv4 } from 'uuid';
+import { COLLECTIONS, getAdminDb } from '@/lib/firebase/admin';
+import type { AuditAction, AuditLogEntry } from '@/lib/domain/types';
 
 export async function createAuditLog(params: {
   action: AuditAction;
@@ -26,8 +26,8 @@ export async function getAuditLogsForEqub(equbId: string): Promise<AuditLogEntry
   const db = getAdminDb();
   const snapshot = await db
     .collection(COLLECTIONS.auditLogs)
-    .where("equbId", "==", equbId)
-    .orderBy("timestamp", "desc")
+    .where('equbId', '==', equbId)
+    .orderBy('timestamp', 'desc')
     .limit(100)
     .get();
 
@@ -38,7 +38,7 @@ export async function getAllAuditLogs(limit = 200): Promise<AuditLogEntry[]> {
   const db = getAdminDb();
   const snapshot = await db
     .collection(COLLECTIONS.auditLogs)
-    .orderBy("timestamp", "desc")
+    .orderBy('timestamp', 'desc')
     .limit(limit)
     .get();
 

@@ -1,11 +1,11 @@
-import type { EqubStatus } from "./types";
+import type { EqubStatus } from './types';
 
 const VALID_TRANSITIONS: Record<EqubStatus, EqubStatus[]> = {
-  DRAFT: ["OPEN_FOR_MEMBERS", "CANCELLED"],
-  OPEN_FOR_MEMBERS: ["LOCKED", "CANCELLED"],
-  LOCKED: ["ACTIVE", "CANCELLED"],
-  ACTIVE: ["PAUSED", "COMPLETED", "CANCELLED"],
-  PAUSED: ["ACTIVE", "CANCELLED"],
+  DRAFT: ['OPEN_FOR_MEMBERS', 'CANCELLED'],
+  OPEN_FOR_MEMBERS: ['LOCKED', 'CANCELLED'],
+  LOCKED: ['ACTIVE', 'CANCELLED'],
+  ACTIVE: ['PAUSED', 'COMPLETED', 'CANCELLED'],
+  PAUSED: ['ACTIVE', 'CANCELLED'],
   COMPLETED: [],
   CANCELLED: [],
 };
@@ -21,11 +21,11 @@ export function assertTransition(from: EqubStatus, to: EqubStatus): void {
 }
 
 export function canJoinEqub(status: EqubStatus): boolean {
-  return status === "OPEN_FOR_MEMBERS";
+  return status === 'OPEN_FOR_MEMBERS';
 }
 
 export function canLeaveEqub(status: EqubStatus): boolean {
-  return status === "OPEN_FOR_MEMBERS" || status === "DRAFT";
+  return status === 'OPEN_FOR_MEMBERS' || status === 'DRAFT';
 }
 
 export function canStartEqub(
@@ -41,16 +41,12 @@ export function canStartEqub(
 }
 
 export function isMembershipLocked(status: EqubStatus): boolean {
-  return ["LOCKED", "ACTIVE", "PAUSED", "COMPLETED"].includes(status);
+  return ['LOCKED', 'ACTIVE', 'PAUSED', 'COMPLETED'].includes(status);
 }
 
-export function canInitiateDraw(
-  status: EqubStatus,
-  cycleStatus: string,
-): boolean {
+export function canInitiateDraw(status: EqubStatus, cycleStatus: string): boolean {
   return (
-    (status === "ACTIVE" || status === "PAUSED") &&
-    (cycleStatus === "DRAW_PENDING" ||
-      cycleStatus === "WAITING_FOR_ELIGIBILITY")
+    (status === 'ACTIVE' || status === 'PAUSED') &&
+    (cycleStatus === 'DRAW_PENDING' || cycleStatus === 'WAITING_FOR_ELIGIBILITY')
   );
 }

@@ -1,21 +1,18 @@
-import { getChapaPaymentProvider } from "./ChapaPaymentProvider";
-import {
-  generateIdempotencyKey,
-  getMockPaymentProvider,
-} from "./MockPaymentProvider";
-import type { PaymentProvider } from "./PaymentProvider";
+import { getChapaPaymentProvider } from './ChapaPaymentProvider';
+import { generateIdempotencyKey, getMockPaymentProvider } from './MockPaymentProvider';
+import type { PaymentProvider } from './PaymentProvider';
 
 export { generateIdempotencyKey };
 
-export type PaymentProviderType = "mock" | "telebirr" | "chapa";
+export type PaymentProviderType = 'mock' | 'telebirr' | 'chapa';
 
 export function getPaymentProvider(): PaymentProvider {
-  const provider = process.env.PAYMENT_PROVIDER ?? "mock";
+  const provider = process.env.PAYMENT_PROVIDER ?? 'mock';
 
   switch (provider) {
-    case "mock":
+    case 'mock':
       return getMockPaymentProvider();
-    case "chapa":
+    case 'chapa':
       return getChapaPaymentProvider();
     default:
       return getMockPaymentProvider();

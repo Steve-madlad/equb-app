@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -84,8 +84,8 @@
 
 /* ─── Light Mode (default) ─────────────────────────────────────── */
 :root {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-geist-mono: "SFMono-Regular", ui-monospace, monospace;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-geist-mono: 'SFMono-Regular', ui-monospace, monospace;
   --background: oklch(0.98 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -186,19 +186,31 @@ body {
   background-color: var(--app-bg);
   color: var(--app-text);
   @apply antialiased;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 /* ─── Loading Animation ────────────────────────────────────────── */
 @keyframes equb-text-wave {
-  0% { background-position: 100% 50%; }
-  50% { background-position: -100% 50%; }
-  100% { background-position: 100% 50%; }
+  0% {
+    background-position: 100% 50%;
+  }
+  50% {
+    background-position: -100% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 /* ─── Glassmorphism Utilities ──────────────────────────────────── */
@@ -235,38 +247,88 @@ body {
 .dark .shimmer-bg {
   background: linear-gradient(
     90deg,
-    rgba(255,255,255,0.02) 25%,
-    rgba(255,255,255,0.06) 50%,
-    rgba(255,255,255,0.02) 75%
+    rgba(255, 255, 255, 0.02) 25%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.02) 75%
   );
   background-size: 200% 100%;
 }
 
 /* ─── Tailwind Utilities ──────────────────────────────────────── */
 @layer utilities {
-  .flex-center { @apply flex items-center justify-center; }
-  .flex-between { @apply flex items-center justify-between; }
-  .align-center { @apply flex items-center; }
-  .align-start { @apply flex items-start; }
-  .just-start { @apply flex justify-start; }
-  .just-center { @apply flex justify-center; }
-  .just-end { @apply flex justify-end; }
-  .col { @apply flex flex-col; }
-  .col-start { @apply flex flex-col items-start; }
-  .col-center { @apply flex flex-col items-center; }
-  .col-between { @apply flex flex-col justify-between; }
-  .col-full-center { @apply flex flex-col items-center justify-center; }
-  .xy-center { @apply items-center justify-center; }
-  .size-screen { @apply h-screen w-screen; }
-  .min-size-screen { @apply min-h-screen min-w-screen; }
-  .cursor { @apply cursor-pointer; }
-  .text-dark { @apply text-[#333]; }
-  .bg-dark { @apply bg-[#333]; }
-  .abs-x-center { @apply absolute left-1/2 -translate-x-1/2; }
-  .abs-y-center { @apply absolute top-1/2 -translate-y-1/2; }
-  .abs-center { @apply absolute left-1/2 right-1/2 -translate-1/2; }
-  .abs-fill { @apply absolute inset-0; }
-  .flip-x { @apply -scale-x-100; }
-  .card-shadow { box-shadow: rgba(0, 0, 0, 0.15) 0px 2px 8px; }
-  .hide-children > * { display: none; }
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
+  .flex-between {
+    @apply flex items-center justify-between;
+  }
+  .align-center {
+    @apply flex items-center;
+  }
+  .align-start {
+    @apply flex items-start;
+  }
+  .just-start {
+    @apply flex justify-start;
+  }
+  .just-center {
+    @apply flex justify-center;
+  }
+  .just-end {
+    @apply flex justify-end;
+  }
+  .col {
+    @apply flex flex-col;
+  }
+  .col-start {
+    @apply flex flex-col items-start;
+  }
+  .col-center {
+    @apply flex flex-col items-center;
+  }
+  .col-between {
+    @apply flex flex-col justify-between;
+  }
+  .col-full-center {
+    @apply flex flex-col items-center justify-center;
+  }
+  .xy-center {
+    @apply items-center justify-center;
+  }
+  .size-screen {
+    @apply h-screen w-screen;
+  }
+  .min-size-screen {
+    @apply min-h-screen min-w-screen;
+  }
+  .cursor {
+    @apply cursor-pointer;
+  }
+  .text-dark {
+    @apply text-[#333];
+  }
+  .bg-dark {
+    @apply bg-[#333];
+  }
+  .abs-x-center {
+    @apply absolute left-1/2 -translate-x-1/2;
+  }
+  .abs-y-center {
+    @apply absolute top-1/2 -translate-y-1/2;
+  }
+  .abs-center {
+    @apply absolute right-1/2 left-1/2 -translate-1/2;
+  }
+  .abs-fill {
+    @apply absolute inset-0;
+  }
+  .flip-x {
+    @apply -scale-x-100;
+  }
+  .card-shadow {
+    box-shadow: rgba(0, 0, 0, 0.15) 0px 2px 8px;
+  }
+  .hide-children > * {
+    display: none;
+  }
 }

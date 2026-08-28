@@ -1,19 +1,19 @@
-import { getAdminAuth } from "@/lib/firebase/admin";
-import { COLLECTIONS, getAdminDb } from "@/lib/firebase/admin";
-import type { UserProfile, UserRole } from "@/lib/domain/types";
+import { getAdminAuth } from '@/lib/firebase/admin';
+import { COLLECTIONS, getAdminDb } from '@/lib/firebase/admin';
+import type { UserProfile, UserRole } from '@/lib/domain/types';
 
 const DEFAULT_RATING = 100;
 
 function normalizeRating(rating: unknown): number {
-  const value = typeof rating === "number" ? rating : DEFAULT_RATING;
+  const value = typeof rating === 'number' ? rating : DEFAULT_RATING;
   return Math.max(0, Math.min(100, value));
 }
 
 export async function verifyAuthToken(
-  authHeader: string | null
+  authHeader: string | null,
 ): Promise<{ uid: string; email?: string }> {
-  if (!authHeader?.startsWith("Bearer ")) {
-    throw new Error("Missing or invalid authorization header");
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw new Error('Missing or invalid authorization header');
   }
 
   const token = authHeader.slice(7);
@@ -30,9 +30,9 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
   const now = new Date().toISOString();
   return {
     id: data.id ?? userId,
-    email: data.email ?? "",
-    displayName: data.displayName ?? "User",
-    role: data.role ?? "USER",
+    email: data.email ?? '',
+    displayName: data.displayName ?? 'User',
+    role: data.role ?? 'USER',
     rating: normalizeRating(data.rating),
     ratingUpdatedAt: data.ratingUpdatedAt ?? now,
     phone: data.phone,
@@ -42,13 +42,10 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
   };
 }
 
-export async function requireRole(
-  userId: string,
-  role: UserRole
-): Promise<UserProfile> {
+export async function requireRole(userId: string, role: UserRole): Promise<UserProfile> {
   const profile = await getUserProfile(userId);
-  if (!profile) throw new Error("User profile not found");
-  if (profile.role !== role) throw new Error("Insufficient permissions");
+  if (!profile) throw new Error('User profile not found');
+  if (profile.role !== role) throw new Error('Insufficient permissions');
   return profile;
 }
 
@@ -58,7 +55,7 @@ export async function createUserProfile(params: {
   displayName: string;
   role?: UserRole;
   phone?: string;
-  payoutAccount?: import("@/lib/domain/types").PayoutAccount;
+  payoutAccount?: import('@/lib/domain/types').PayoutAccount;
 }): Promise<UserProfile> {
   const db = getAdminDb();
   const now = new Date().toISOString();
@@ -66,7 +63,7 @@ export async function createUserProfile(params: {
     id: params.id,
     email: params.email,
     displayName: params.displayName,
-    role: params.role ?? "USER",
+    role: params.role ?? 'USER',
     rating: DEFAULT_RATING,
     ratingUpdatedAt: now,
     phone: params.phone,
@@ -81,11 +78,11 @@ export async function createUserProfile(params: {
 
 export async function updateUserProfile(
   userId: string,
-  updates: Partial<Pick<UserProfile, "displayName" | "phone" | "payoutAccount">>
+  updates: Partial<Pick<UserProfile, 'displayName' | 'phone' | 'payoutAccount'>>,
 ): Promise<UserProfile> {
   const db = getAdminDb();
   const current = await getUserProfile(userId);
-  if (!current) throw new Error("User profile not found");
+  if (!current) throw new Error('User profile not found');
 
   const now = new Date().toISOString();
   const patch: Record<string, unknown> = {
@@ -107,21 +104,24 @@ export async function updateUserProfile(
 export async function adjustUserRating(
   userId: string,
   delta: number,
-  reason?: string
+  reason?: string,
 ): Promise<UserProfile> {
   const db = getAdminDb();
   const current = await getUserProfile(userId);
-  if (!current) throw new Error("User profile not found");
+  if (!current) throw new Error('User profile not found');
 
   const nextRating = Math.max(0, Math.min(100, current.rating + delta));
   const ratingUpdatedAt = new Date().toISOString();
 
-  await db.collection(COLLECTIONS.users).doc(userId).update({
-    rating: nextRating,
-    ratingUpdatedAt,
-    updatedAt: ratingUpdatedAt,
-    ...(reason ? { ratingReason: reason } : {}),
-  });
+  await db
+    .collection(COLLECTIONS.users)
+    .doc(userId)
+    .update({
+      rating: nextRating,
+      ratingUpdatedAt,
+      updatedAt: ratingUpdatedAt,
+      ...(reason ? { ratingReason: reason } : {}),
+    });
 
   return {
     ...current,
@@ -131,18 +131,14 @@ export async function adjustUserRating(
   };
 }
 
-export async function requireAuth(
-  authHeader: string | null
-): Promise<UserProfile> {
+export async function requireAuth(authHeader: string | null): Promise<UserProfile> {
   const { uid } = await verifyAuthToken(authHeader);
   const profile = await getUserProfile(uid);
-  if (!profile) throw new Error("User profile not found");
+  if (!profile) throw new Error('User profile not found');
   return profile;
 }
 
-export async function requireAdmin(
-  authHeader: string | null
-): Promise<UserProfile> {
+export async function requireAdmin(authHeader: string | null): Promise<UserProfile> {
   const { uid } = await verifyAuthToken(authHeader);
-  return requireRole(uid, "ADMIN");
+  return requireRole(uid, 'ADMIN');
 }

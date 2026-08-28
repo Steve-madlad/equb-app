@@ -1,5 +1,5 @@
-import { fetchSupportedBanks } from "@/lib/services/chapaTransferService";
-import { NextResponse } from "next/server";
+import { fetchSupportedBanks } from '@/lib/services/chapaTransferService';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
@@ -7,8 +7,8 @@ export async function GET() {
     return NextResponse.json({ banks });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to fetch supported banks" },
-      { status: 500 }
+      { error: error instanceof Error ? error.message : 'Failed to fetch supported banks' },
+      { status: 500 },
     );
   }
 }

@@ -1,19 +1,14 @@
-"use client";
+'use client';
 
-import { Navbar } from "@/components/layout/Navbar";
-import { Button } from "@/components/ui/Button";
-import { EqubLoading } from "@/components/ui/EqubLoading";
-import { StatusBadge } from "@/components/ui/StatusBadge";
-import type {
-  Equb,
-  Membership,
-  Notification,
-  UserProfile,
-} from "@/lib/domain/types";
-import { getFirebaseAuth } from "@/lib/firebase/client";
-import type { PendingMembershipRequest } from "@/lib/services/equbService";
-import { formatDateTime } from "@/lib/utils";
-import { onIdTokenChanged, signOut } from "firebase/auth";
+import { Navbar } from '@/components/layout/Navbar';
+import { Button } from '@/components/ui/Button';
+import { EqubLoading } from '@/components/ui/EqubLoading';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import type { Equb, Membership, Notification, UserProfile } from '@/lib/domain/types';
+import { getFirebaseAuth } from '@/lib/firebase/client';
+import type { PendingMembershipRequest } from '@/lib/services/equbService';
+import { formatDateTime } from '@/lib/utils';
+import { onIdTokenChanged, signOut } from 'firebase/auth';
 import {
   Bell,
   CheckCheck,
@@ -22,9 +17,9 @@ import {
   MailCheck,
   MailOpen,
   UserCheck,
-} from "lucide-react";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+} from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 type NotificationFeedResponse = {
   profile: UserProfile;
@@ -39,22 +34,20 @@ export default function NotificationsPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [membershipStatuses, setMembershipStatuses] = useState<
-    NotificationFeedResponse["membershipStatuses"]
+    NotificationFeedResponse['membershipStatuses']
   >([]);
-  const [adminRequests, setAdminRequests] = useState<
-    PendingMembershipRequest[]
-  >([]);
+  const [adminRequests, setAdminRequests] = useState<PendingMembershipRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsub = onIdTokenChanged(getFirebaseAuth(), async (user) => {
       if (!user) {
-        window.location.href = "/login";
+        window.location.href = '/login';
         return;
       }
 
       const token = await user.getIdToken();
-      const res = await fetch("/api/notifications", {
+      const res = await fetch('/api/notifications', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -79,16 +72,14 @@ export default function NotificationsPage() {
 
     const token = await user.getIdToken();
     const res = await fetch(`/api/notifications/${notificationId}`, {
-      method: "PATCH",
+      method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` },
     });
 
     if (res.ok) {
       setNotifications((current) =>
         current.map((notification) =>
-          notification.id === notificationId
-            ? { ...notification, read: true }
-            : notification,
+          notification.id === notificationId ? { ...notification, read: true } : notification,
         ),
       );
       setUnreadCount((current) => Math.max(0, current - 1));
@@ -99,8 +90,8 @@ export default function NotificationsPage() {
     const user = getFirebaseAuth().currentUser;
     if (!user || unreadCount === 0) return;
     const token = await user.getIdToken();
-    const res = await fetch("/api/notifications", {
-      method: "PATCH",
+    const res = await fetch('/api/notifications', {
+      method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` },
     });
     if (res.ok) {
@@ -116,38 +107,35 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/70 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 transition-colors duration-300">
+    <div className="min-h-screen bg-slate-100/70 transition-colors duration-300 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
       {/* Ambient glow (dark mode only) */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10 opacity-0 dark:opacity-100">
-        <div className="absolute top-1/4 right-1/3 w-96 h-96 bg-emerald-600/10 rounded-full blur-[140px]" />
-        <div className="absolute bottom-1/3 left-1/4 w-72 h-72 bg-teal-600/8 rounded-full blur-[120px]" />
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden opacity-0 dark:opacity-100">
+        <div className="absolute top-1/4 right-1/3 h-96 w-96 rounded-full bg-emerald-600/10 blur-[140px]" />
+        <div className="absolute bottom-1/3 left-1/4 h-72 w-72 rounded-full bg-teal-600/8 blur-[120px]" />
       </div>
 
       <Navbar
         links={[]}
         userName={profile?.displayName}
-        isAdmin={profile?.role === "ADMIN"}
+        isAdmin={profile?.role === 'ADMIN'}
         searchHref="/search"
         notificationCount={unreadCount}
-        onSignOut={() =>
-          signOut(getFirebaseAuth()).then(() => (window.location.href = "/"))
-        }
+        onSignOut={() => signOut(getFirebaseAuth()).then(() => (window.location.href = '/'))}
       />
 
-      <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
               Notifications & Requests
             </h1>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              Your latest Equb draw alerts, admission requests, and settlement
-              updates.
+              Your latest Equb draw alerts, admission requests, and settlement updates.
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/[0.04] backdrop-blur-xl px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 shadow-sm dark:shadow-none">
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300 dark:shadow-none">
               <Bell className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               <span>{unreadCount} unread</span>
             </div>
@@ -156,7 +144,7 @@ export default function NotificationsPage() {
               variant="secondary"
               onClick={markAllRead}
               disabled={unreadCount === 0}
-              className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/10 text-slate-800 dark:text-slate-200 disabled:opacity-30 transition-all text-sm font-semibold px-4 py-4.5 shadow-sm dark:shadow-none"
+              className="rounded-2xl border border-slate-200/80 bg-white px-4 py-4.5 text-sm font-semibold text-slate-800 shadow-sm transition-all hover:bg-slate-50 disabled:opacity-30 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:shadow-none dark:hover:bg-white/10"
             >
               <CheckCheck className="mr-1.5 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               Mark all as read
@@ -165,27 +153,26 @@ export default function NotificationsPage() {
         </div>
 
         {/* Admin Admission Requests */}
-        {profile?.role === "ADMIN" && (
+        {profile?.role === 'ADMIN' && (
           <section className="mb-8">
-            <div className="rounded-3xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-white/[0.03] backdrop-blur-xl p-6 shadow-md shadow-slate-200/60 dark:shadow-black/25 dark:shadow-xl">
-              <div className="flex items-center gap-2 mb-4">
-                <UserCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-md shadow-slate-200/60 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03] dark:shadow-xl dark:shadow-black/25">
+              <div className="mb-4 flex items-center gap-2">
+                <UserCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                   Admission Requests
                 </h2>
                 {adminRequests.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-bold">
+                  <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-400">
                     {adminRequests.length} pending
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                Requests for the Equbs you created. Review them directly from
-                the Equb workspace.
+              <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+                Requests for the Equbs you created. Review them directly from the Equb workspace.
               </p>
 
               {adminRequests.length === 0 ? (
-                <div className="rounded-2xl border border-slate-200/60 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] p-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                <div className="rounded-2xl border border-slate-200/60 bg-slate-50 p-6 text-center text-xs text-slate-500 dark:border-white/5 dark:bg-white/[0.02] dark:text-slate-400">
                   No pending admission requests right now.
                 </div>
               ) : (
@@ -193,26 +180,26 @@ export default function NotificationsPage() {
                   {adminRequests.map(({ membership, equb, requester }) => (
                     <div
                       key={membership.id}
-                      className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-slate-50/90 dark:bg-slate-900/50 p-4 transition-all hover:border-emerald-500/40"
+                      className="rounded-2xl border border-slate-200/80 bg-slate-50/90 p-4 transition-all hover:border-emerald-500/40 dark:border-white/10 dark:bg-slate-900/50"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className="font-bold text-slate-900 dark:text-white text-sm">
-                              {requester?.displayName ?? "Unknown user"}
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">
+                              {requester?.displayName ?? 'Unknown user'}
                             </p>
                             <span className="text-xs text-slate-500 dark:text-slate-400">
-                              ({requester?.email ?? ""})
+                              ({requester?.email ?? ''})
                             </span>
                           </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-                            Requested to join{" "}
+                          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                            Requested to join{' '}
                             <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                               {equb.name}
                             </span>
                           </p>
-                          <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
+                          <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
+                            <Clock className="h-3 w-3" />
                             Submitted {formatDateTime(membership.joinedAt)}
                           </p>
                         </div>
@@ -221,7 +208,7 @@ export default function NotificationsPage() {
                           <Link href={`/equbs/${equb.id}`}>
                             <Button
                               size="sm"
-                              className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-semibold px-3 py-1.5"
+                              className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:from-emerald-400 hover:to-teal-500"
                             >
                               Review Equb
                             </Button>
@@ -237,21 +224,21 @@ export default function NotificationsPage() {
         )}
 
         {/* Member Approval Status (User view) */}
-        {profile?.role !== "ADMIN" && (
+        {profile?.role !== 'ADMIN' && (
           <section className="mb-8">
-            <div className="rounded-3xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-white/[0.03] backdrop-blur-xl p-6 shadow-md shadow-slate-200/60 dark:shadow-black/25 dark:shadow-xl">
-              <div className="flex items-center gap-2 mb-4">
-                <MailCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-md shadow-slate-200/60 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03] dark:shadow-xl dark:shadow-black/25">
+              <div className="mb-4 flex items-center gap-2">
+                <MailCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                   Membership Approval Status
                 </h2>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
                 Your membership applications and current standing in each Equb.
               </p>
 
               {membershipStatuses.length === 0 ? (
-                <div className="rounded-2xl border border-slate-200/60 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] p-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                <div className="rounded-2xl border border-slate-200/60 bg-slate-50 p-6 text-center text-xs text-slate-500 dark:border-white/5 dark:bg-white/[0.02] dark:text-slate-400">
                   You have no active or pending membership records.
                 </div>
               ) : (
@@ -259,22 +246,22 @@ export default function NotificationsPage() {
                   {membershipStatuses.map(({ membership, equb }) => (
                     <div
                       key={membership.id}
-                      className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-slate-50/90 dark:bg-slate-900/50 p-4 transition-all hover:border-emerald-500/40"
+                      className="rounded-2xl border border-slate-200/80 bg-slate-50/90 p-4 transition-all hover:border-emerald-500/40 dark:border-white/10 dark:bg-slate-900/50"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <p className="font-bold text-slate-900 dark:text-white text-sm">
-                            {equb?.name ?? "Equb Group"}
+                          <p className="text-sm font-bold text-slate-900 dark:text-white">
+                            {equb?.name ?? 'Equb Group'}
                           </p>
-                          <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                            {membership.status === "PENDING"
-                              ? "Your application is waiting for administrator approval."
-                              : membership.status === "APPROVED"
-                                ? "Your request was approved! You are ready to participate."
+                          <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
+                            {membership.status === 'PENDING'
+                              ? 'Your application is waiting for administrator approval.'
+                              : membership.status === 'APPROVED'
+                                ? 'Your request was approved! You are ready to participate.'
                                 : `Current status: ${membership.status.toLowerCase()}.`}
                           </p>
-                          <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
+                          <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
+                            <Clock className="h-3 w-3" />
                             Joined {formatDateTime(membership.joinedAt)}
                           </p>
                         </div>
@@ -285,7 +272,7 @@ export default function NotificationsPage() {
                               <Button
                                 size="sm"
                                 variant="secondary"
-                                className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-xs text-slate-700 dark:text-slate-300"
+                                className="rounded-xl border border-slate-200 bg-white text-xs text-slate-700 hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
                               >
                                 View
                               </Button>
@@ -303,24 +290,22 @@ export default function NotificationsPage() {
 
         {/* Notification Feed */}
         <section>
-          <div className="rounded-3xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-white/[0.03] backdrop-blur-xl p-6 shadow-md shadow-slate-200/60 dark:shadow-black/25 dark:shadow-xl">
-            <div className="flex items-center gap-2 mb-4">
-              <Bell className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                Recent Feed
-              </h2>
+          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-md shadow-slate-200/60 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03] dark:shadow-xl dark:shadow-black/25">
+            <div className="mb-4 flex items-center gap-2">
+              <Bell className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Recent Feed</h2>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+            <p className="mb-6 text-xs text-slate-500 dark:text-slate-400">
               Actionable messages and system events, ordered newest first.
             </p>
 
             {notifications.length === 0 ? (
-              <div className="rounded-2xl border border-slate-200/60 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] p-10 text-center">
-                <MailOpen className="h-8 w-8 text-slate-400 dark:text-slate-500 mx-auto mb-2" />
+              <div className="rounded-2xl border border-slate-200/60 bg-slate-50 p-10 text-center dark:border-white/5 dark:bg-white/[0.02]">
+                <MailOpen className="mx-auto mb-2 h-8 w-8 text-slate-400 dark:text-slate-500" />
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-400">
                   No notifications yet
                 </p>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="mt-1 text-xs text-slate-500">
                   You will receive updates here as Equb cycles advance.
                 </p>
               </div>
@@ -330,16 +315,16 @@ export default function NotificationsPage() {
                   <div
                     key={notification.id}
                     className={[
-                      "group relative rounded-2xl border p-4 transition-all duration-200",
+                      'group relative rounded-2xl border p-4 transition-all duration-200',
                       notification.read
-                        ? "border-slate-200/70 dark:border-white/5 bg-slate-50/70 dark:bg-white/[0.02] opacity-80"
-                        : "border-emerald-400/60 dark:border-emerald-500/30 bg-emerald-50/80 dark:bg-emerald-500/[0.05] shadow-md shadow-emerald-500/5",
-                    ].join(" ")}
+                        ? 'border-slate-200/70 bg-slate-50/70 opacity-80 dark:border-white/5 dark:bg-white/[0.02]'
+                        : 'border-emerald-400/60 bg-emerald-50/80 shadow-md shadow-emerald-500/5 dark:border-emerald-500/30 dark:bg-emerald-500/[0.05]',
+                    ].join(' ')}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0 max-w-xl">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+                      <div className="max-w-xl min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                             {notification.title}
                           </h3>
                           {!notification.read && (
@@ -348,24 +333,22 @@ export default function NotificationsPage() {
                             </span>
                           )}
                         </div>
-                        <p className="mt-1.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                        <p className="mt-1.5 text-xs leading-relaxed text-slate-700 dark:text-slate-300">
                           {notification.message}
                         </p>
-                        <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
+                        <p className="mt-2 flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
+                          <Clock className="h-3 w-3" />
                           {formatDateTime(notification.createdAt)}
                         </p>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <StatusBadge
-                          status={notification.read ? "COMPLETED" : "PENDING"}
-                        />
+                        <StatusBadge status={notification.read ? 'COMPLETED' : 'PENDING'} />
                         {!notification.read && (
                           <button
                             type="button"
                             onClick={() => markRead(notification.id)}
-                            className="inline-flex items-center gap-1 rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-500/20 hover:border-emerald-500/40 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-400 transition-all shadow-sm dark:shadow-none"
+                            className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:border-emerald-500/40 hover:bg-emerald-50 hover:text-emerald-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:shadow-none dark:hover:bg-emerald-500/20 dark:hover:text-emerald-400"
                           >
                             <CheckCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                             <span>Mark read</span>
@@ -375,7 +358,7 @@ export default function NotificationsPage() {
                           <Link href={`/equbs/${notification.equbId}`}>
                             <button
                               type="button"
-                              className="inline-flex items-center gap-1 rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 px-2.5 py-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm dark:shadow-none"
+                              className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-500 shadow-sm transition-all hover:bg-slate-100 hover:text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:shadow-none dark:hover:bg-white/10 dark:hover:text-white"
                               title="Go to Equb"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />

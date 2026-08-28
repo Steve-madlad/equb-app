@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getMockPaymentProvider } from "@/lib/payments/MockPaymentProvider";
+import { NextRequest, NextResponse } from 'next/server';
+import { getMockPaymentProvider } from '@/lib/payments/MockPaymentProvider';
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const { providerTransactionId, outcome } = body;
 
     if (!providerTransactionId || !outcome) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+      return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
     const provider = getMockPaymentProvider();
@@ -15,8 +15,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ result });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed" },
-      { status: 400 }
+      { error: error instanceof Error ? error.message : 'Failed' },
+      { status: 400 },
     );
   }
 }

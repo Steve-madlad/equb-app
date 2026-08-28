@@ -1,6 +1,6 @@
-import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
-import { getAuth, type Auth } from "firebase-admin/auth";
-import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
+import { getAuth, type Auth } from 'firebase-admin/auth';
+import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
 let adminApp: App | undefined;
 let adminDb: Firestore | undefined;
@@ -8,8 +8,8 @@ let adminAuth: Auth | undefined;
 
 function getPrivateKey(): string {
   const key = process.env.FIREBASE_PRIVATE_KEY;
-  if (!key) throw new Error("FIREBASE_PRIVATE_KEY is not set");
-  return key.replace(/\\n/g, "\n");
+  if (!key) throw new Error('FIREBASE_PRIVATE_KEY is not set');
+  return key.replace(/\\n/g, '\n');
 }
 
 export function getAdminApp(): App {
@@ -52,16 +52,16 @@ export function getAdminAuth(): Auth {
 
 /** Firestore collection names */
 export const COLLECTIONS = {
-  users: "users",
-  equbs: "equbs",
-  memberships: "memberships",
-  cycles: "cycles",
-  obligations: "obligations",
-  payments: "payments",
-  mockPayments: "mockPayments",
-  payouts: "payouts",
-  draws: "draws",
-  ledger: "ledger",
-  auditLogs: "auditLogs",
-  notifications: "notifications",
+  users: 'users',
+  equbs: 'equbs',
+  memberships: 'memberships',
+  cycles: 'cycles',
+  obligations: 'obligations',
+  payments: 'payments',
+  mockPayments: 'mockPayments',
+  payouts: 'payouts',
+  draws: 'draws',
+  ledger: 'ledger',
+  auditLogs: 'auditLogs',
+  notifications: 'notifications',
 } as const;

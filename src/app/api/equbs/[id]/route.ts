@@ -1,9 +1,6 @@
-import {
-  getEligibleMembers,
-  getIneligibilityReason,
-} from "@/lib/domain/eligibility";
-import { formatMoney, toMinorUnits } from "@/lib/domain/money";
-import { getUserProfile, requireAdmin, requireAuth } from "@/lib/firebase/auth";
+import { getEligibleMembers, getIneligibilityReason } from '@/lib/domain/eligibility';
+import { formatMoney, toMinorUnits } from '@/lib/domain/money';
+import { getUserProfile, requireAdmin, requireAuth } from '@/lib/firebase/auth';
 import {
   approveMembership,
   approveMemberships,
@@ -17,71 +14,64 @@ import {
   rejectMembership,
   updateEqub,
   withdrawMembership,
-} from "@/lib/services/equbService";
-import { getCurrentPoolForEqub } from "@/lib/services/ledgerService";
+} from '@/lib/services/equbService';
+import { getCurrentPoolForEqub } from '@/lib/services/ledgerService';
 import {
   getObligationsForCycle,
   getObligationsForUser,
   notifyAdminsOfDuePayoutCycles,
-} from "@/lib/services/paymentService";
-import {
-  getDrawForCycle,
-  getPayoutsForEqub,
-} from "@/lib/services/payoutService";
-import { resolveRequestDate } from "@/lib/testClock";
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+} from '@/lib/services/paymentService';
+import { getDrawForCycle, getPayoutsForEqub } from '@/lib/services/payoutService';
+import { resolveRequestDate } from '@/lib/testClock';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 const createEqubSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   contributionAmount: z.number().positive(),
-  frequency: z.enum(["WEEKLY", "MONTHLY", "CUSTOM"]),
+  frequency: z.enum(['WEEKLY', 'MONTHLY', 'CUSTOM']),
   customIntervalDays: z.number().positive().optional(),
   numberOfCycles: z.number().int().min(2),
   memberLimit: z.number().int().min(2),
   minimumMemberCount: z.number().int().min(2),
   startDate: z.string(),
   penaltyEnabled: z.boolean().default(false),
-  penaltyType: z.enum(["FIXED_AMOUNT", "PERCENTAGE"]).nullable().optional(),
+  penaltyType: z.enum(['FIXED_AMOUNT', 'PERCENTAGE']).nullable().optional(),
   penaltyAmount: z.number().nullable().optional(),
 });
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireAuth(request.headers.get("authorization"));
+    const user = await requireAuth(request.headers.get('authorization'));
     const { id } = await params;
-    if (user.role === "ADMIN") {
+    if (user.role === 'ADMIN') {
       await notifyAdminsOfDuePayoutCycles(resolveRequestDate(request));
     }
     const equb = await getEqub(id);
-    if (!equb)
-      return NextResponse.json({ error: "Equb not found" }, { status: 404 });
+    if (!equb) return NextResponse.json({ error: 'Equb not found' }, { status: 404 });
 
     const memberships = await getMembershipsForEqub(id);
     const cycles = await getCyclesForEqub(id);
     const payouts = await getPayoutsForEqub(id);
 
-    const activeStatuses = ["ACTIVE", "APPROVED", "PENDING"];
+    const activeStatuses = ['ACTIVE', 'APPROVED', 'PENDING'];
     const userMemberships = memberships.filter((m) => m.userId === user.id);
     const userMembership =
       userMemberships.find((m) => activeStatuses.includes(m.status)) ??
-      userMemberships.sort((a, b) => (b.joinedAt || "").localeCompare(a.joinedAt || ""))[0] ??
+      userMemberships.sort((a, b) => (b.joinedAt || '').localeCompare(a.joinedAt || ''))[0] ??
       null;
     let userObligations: Awaited<ReturnType<typeof getObligationsForUser>> = [];
     let eligibility: { eligible: boolean; reason: string | null } | null = null;
     let pendingRequests: Array<
-      import("@/lib/domain/types").Membership & {
+      import('@/lib/domain/types').Membership & {
         requesterName: string;
         requesterEmail: string;
         requesterRating: number;
       }
     > = [];
     let memberSummaries: Array<{
-      membership: import("@/lib/domain/types").Membership;
+      membership: import('@/lib/domain/types').Membership;
       user: {
         id: string;
         displayName: string;
@@ -93,16 +83,13 @@ export async function GET(
     if (userMembership) {
       userObligations = await getObligationsForUser(user.id, id);
       const currentCycle = cycles.find((c) =>
-        ["ACTIVE", "DRAW_PENDING", "WAITING_FOR_ELIGIBILITY"].includes(
-          c.status,
-        ),
+        ['ACTIVE', 'DRAW_PENDING', 'WAITING_FOR_ELIGIBILITY'].includes(c.status),
       );
       if (currentCycle) {
         const cycleObligations = await getObligationsForCycle(currentCycle.id);
         const allObligations = userObligations;
         const eligible =
-          getEligibleMembers([userMembership], cycleObligations, allObligations)
-            .length > 0;
+          getEligibleMembers([userMembership], cycleObligations, allObligations).length > 0;
         eligibility = {
           eligible,
           reason: getIneligibilityReason({
@@ -114,25 +101,21 @@ export async function GET(
       }
     }
 
-    if (user.role === "ADMIN") {
+    if (user.role === 'ADMIN') {
       const currentCycleForMembers = cycles.find((cycle) =>
-        ["ACTIVE", "DRAW_PENDING", "WAITING_FOR_ELIGIBILITY", "DRAWN"].includes(
-          cycle.status,
-        ),
+        ['ACTIVE', 'DRAW_PENDING', 'WAITING_FOR_ELIGIBILITY', 'DRAWN'].includes(cycle.status),
       );
       const currentCycleObligations = currentCycleForMembers
         ? await getObligationsForCycle(currentCycleForMembers.id)
         : [];
-      const pendingMemberships = memberships.filter(
-        (m) => m.status === "PENDING",
-      );
+      const pendingMemberships = memberships.filter((m) => m.status === 'PENDING');
       pendingRequests = await Promise.all(
         pendingMemberships.map(async (membership) => {
           const requester = await getUserProfile(membership.userId);
           return {
             ...membership,
             requesterName: requester?.displayName ?? membership.userId,
-            requesterEmail: requester?.email ?? "",
+            requesterEmail: requester?.email ?? '',
             requesterRating: requester?.rating ?? 100,
           };
         }),
@@ -146,13 +129,13 @@ export async function GET(
             user: {
               id: profile?.id ?? membership.userId,
               displayName: profile?.displayName ?? membership.userId,
-              email: profile?.email ?? "",
+              email: profile?.email ?? '',
               rating: profile?.rating ?? 100,
             },
             contributionStatus:
               currentCycleObligations.find(
                 (obligation) => obligation.membershipId === membership.id,
-              )?.status ?? "NOT_STARTED",
+              )?.status ?? 'NOT_STARTED',
           };
         }),
       );
@@ -180,29 +163,23 @@ export async function GET(
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unauthorized" },
+      { error: error instanceof Error ? error.message : 'Unauthorized' },
       { status: 401 },
     );
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await request.json();
     const { action, membershipId, membershipIds } = body;
-    const authHeader = request.headers.get("authorization");
+    const authHeader = request.headers.get('authorization');
 
-    if (action === "withdraw_membership") {
+    if (action === 'withdraw_membership') {
       const user = await requireAuth(authHeader);
       if (!membershipId) {
-        return NextResponse.json(
-          { error: "membershipId required" },
-          { status: 400 },
-        );
+        return NextResponse.json({ error: 'membershipId required' }, { status: 400 });
       }
       const membership = await withdrawMembership(membershipId, user.id);
       return NextResponse.json({ membership });
@@ -211,15 +188,15 @@ export async function PATCH(
     const admin = await requireAdmin(authHeader);
 
     switch (action) {
-      case "open":
+      case 'open':
         const opened = await openEqubForMembers(id, admin.id);
         return NextResponse.json({ equb: opened });
-      case "lock":
+      case 'lock':
         const locked = await lockEqub(id, admin.id, {
           currentDateIso: resolveRequestDate(request),
         });
         return NextResponse.json({ equb: locked });
-      case "update": {
+      case 'update': {
         const parsed = createEqubSchema.parse(body);
         const updated = await updateEqub(
           id,
@@ -227,7 +204,7 @@ export async function PATCH(
             name: parsed.name,
             description: parsed.description,
             contributionAmountMinor: toMinorUnits(parsed.contributionAmount),
-            currency: "ETB",
+            currency: 'ETB',
             frequency: parsed.frequency,
             customIntervalDays: parsed.customIntervalDays,
             numberOfCycles: parsed.numberOfCycles,
@@ -242,47 +219,31 @@ export async function PATCH(
         );
         return NextResponse.json({ equb: updated });
       }
-      case "approve_member":
+      case 'approve_member':
         if (!membershipId)
-          return NextResponse.json(
-            { error: "membershipId required" },
-            { status: 400 },
-          );
+          return NextResponse.json({ error: 'membershipId required' }, { status: 400 });
         const membership = await approveMembership(membershipId, admin.id);
         return NextResponse.json({ membership });
-      case "reject_member":
+      case 'reject_member':
         if (!membershipId) {
-          return NextResponse.json(
-            { error: "membershipId required" },
-            { status: 400 },
-          );
+          return NextResponse.json({ error: 'membershipId required' }, { status: 400 });
         }
         const rejected = await rejectMembership(membershipId, admin.id);
         return NextResponse.json({ membership: rejected });
-      case "approve_members": {
+      case 'approve_members': {
         if (!Array.isArray(membershipIds) || membershipIds.length === 0) {
-          return NextResponse.json(
-            { error: "membershipIds required" },
-            { status: 400 },
-          );
+          return NextResponse.json({ error: 'membershipIds required' }, { status: 400 });
         }
         const result = await approveMemberships(membershipIds, admin.id);
         return NextResponse.json({ result });
       }
-      case "grant_payout_exception": {
+      case 'grant_payout_exception': {
         if (!membershipId) {
-          return NextResponse.json(
-            { error: "membershipId required" },
-            { status: 400 },
-          );
+          return NextResponse.json({ error: 'membershipId required' }, { status: 400 });
         }
-        const reason =
-          typeof body.reason === "string" ? body.reason.trim() : "";
+        const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
         if (!reason) {
-          return NextResponse.json(
-            { error: "reason required" },
-            { status: 400 },
-          );
+          return NextResponse.json({ error: 'reason required' }, { status: 400 });
         }
         const exceptionMembership = await grantPayoutEligibilityException(
           membershipId,
@@ -292,11 +253,11 @@ export async function PATCH(
         return NextResponse.json({ membership: exceptionMembership });
       }
       default:
-        return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+        return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed" },
+      { error: error instanceof Error ? error.message : 'Failed' },
       { status: 400 },
     );
   }
@@ -307,13 +268,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const admin = await requireAdmin(request.headers.get("authorization"));
+    const admin = await requireAdmin(request.headers.get('authorization'));
     const { id } = await params;
     await deleteEqub(id, admin.id);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed";
-    const status = message.includes("members have joined") ? 400 : 400;
+    const message = error instanceof Error ? error.message : 'Failed';
+    const status = message.includes('members have joined') ? 400 : 400;
     return NextResponse.json({ error: message }, { status });
   }
 }
