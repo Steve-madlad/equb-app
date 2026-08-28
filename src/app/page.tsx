@@ -28,6 +28,7 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
+import { TeferLogo } from "@/components/svg/TeferLogo";
 
 export default function HomePage() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -501,6 +502,12 @@ export default function HomePage() {
             <Link href="/login" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
               Sign In
             </Link>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-wider">Powered by</span>
+            <div className="inline-flex items-center text-slate-700 dark:text-slate-300">
+              <TeferLogo className="h-4 w-auto" />
+            </div>
           </div>
           <p>© {new Date().getFullYear()} Equb Platform. Built with financial correctness & transparency.</p>
         </div>

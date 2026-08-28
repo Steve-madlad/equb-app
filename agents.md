@@ -11,9 +11,10 @@ Most business logic lives in `src/lib`, while route handlers in `src/app/api` ex
 ## Core Architecture
 
 - Client-side Firebase SDK is used for sign-in, sign-up, and reading the current user session.
-- Server-side Firebase Admin SDK (`src/lib/firebase/admin.ts`) is used for all trusted reads/writes to Firestore and for verifying ID tokens, initialized with `ignoreUndefinedProperties: true`.
+- Server-side Firebase Admin SDK (`src/lib/firebase/admin.ts`) is used for all trusted reads/writes to Firestore and for verifying ID tokens, with safe try/catch on `adminDb.settings({ ignoreUndefinedProperties: true })` to prevent re-initialization conflicts.
 - Firestore is the source of truth for user profiles, Equb records, memberships, cycles, obligations, payments, payouts, ledgers, audit logs, and notifications.
 - The app relies on Next.js route handlers rather than Firebase Cloud Functions.
+- Reusable branding component `TeferLogo` (`src/components/svg/TeferLogo.tsx`) is rendered on auth footers and landing page with `currentColor` support.
 
 ## Important Flows
 

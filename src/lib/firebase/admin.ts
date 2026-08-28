@@ -34,7 +34,11 @@ export function getAdminApp(): App {
 export function getAdminDb(): Firestore {
   if (!adminDb) {
     adminDb = getFirestore(getAdminApp());
-    adminDb.settings({ ignoreUndefinedProperties: true });
+    try {
+      adminDb.settings({ ignoreUndefinedProperties: true });
+    } catch {
+      // settings() already invoked or cannot be re-applied on active instance
+    }
   }
   return adminDb;
 }

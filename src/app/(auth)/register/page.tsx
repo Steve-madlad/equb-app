@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createUserWithEmailAndPassword, onIdTokenChanged } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  onIdTokenChanged,
+} from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/Button";
 import {
@@ -21,6 +24,16 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import type { SupportedBank } from "@/lib/services/chapaTransferService";
+import { TeferLogo } from "@/components/svg/TeferLogo";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const DEFAULT_BANKS: SupportedBank[] = [
   { id: "cbe", name: "Commercial Bank of Ethiopia (CBE)", code: "cbe" },
@@ -72,7 +85,8 @@ export default function RegisterPage() {
   const [selectedBankCode, setSelectedBankCode] = useState<string>("cbe");
   const [accountNumber, setAccountNumber] = useState("");
   const [accountName, setAccountName] = useState("");
-  const [accountNameManuallyEdited, setAccountNameManuallyEdited] = useState(false);
+  const [accountNameManuallyEdited, setAccountNameManuallyEdited] =
+    useState(false);
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -109,7 +123,9 @@ export default function RegisterPage() {
     }
   };
 
-  const isMobileWallet = ["telebirr", "cbebirr", "mpesa"].includes(selectedBankCode);
+  const isMobileWallet = ["telebirr", "cbebirr", "mpesa"].includes(
+    selectedBankCode,
+  );
 
   const handleUsePhoneForAccount = () => {
     if (phone.trim()) {
@@ -138,7 +154,9 @@ export default function RegisterPage() {
       return;
     }
     if (!accountName.trim()) {
-      setError("Please enter your account holder name as registered with the bank.");
+      setError(
+        "Please enter your account holder name as registered with the bank.",
+      );
       return;
     }
 
@@ -152,7 +170,7 @@ export default function RegisterPage() {
       const cred = await createUserWithEmailAndPassword(
         getFirebaseAuth(),
         email.trim(),
-        password
+        password,
       );
       const token = await cred.user.getIdToken();
 
@@ -190,9 +208,9 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 px-4 py-12 transition-colors duration-300">
+    <div className="relative min-h-screen w-full overflow-x-hidden flex flex-col items-center justify-center bg-slate-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 px-4 py-12 transition-colors duration-300">
       {/* Top Bar with Logo link & Theme Toggle */}
-      <div className="absolute top-6 left-6 right-6 flex items-center justify-between max-w-5xl mx-auto">
+      <div className="absolute top-6 left-6 right-6 flex items-center justify-between max-w-5xl mx-auto z-10">
         <Link
           href="/"
           className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-white"
@@ -205,11 +223,13 @@ export default function RegisterPage() {
         <ThemeToggle />
       </div>
 
-      {/* Subtle background glow circles (dark mode only) */}
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-600/15 rounded-full blur-3xl pointer-events-none opacity-0 dark:opacity-100" />
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-teal-600/15 rounded-full blur-3xl pointer-events-none opacity-0 dark:opacity-100" />
+      {/* Subtle background glow circles bounded within overflow-hidden container */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden -z-0">
+        <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-600/15 rounded-full blur-3xl opacity-0 dark:opacity-100" />
+        <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-teal-600/15 rounded-full blur-3xl opacity-0 dark:opacity-100" />
+      </div>
 
-      <div className="relative w-full max-w-xl mt-6">
+      <div className="relative w-full max-w-xl mt-6 z-10 my-auto">
         {/* Header Branding */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-500/20 mb-3">
@@ -348,7 +368,9 @@ export default function RegisterPage() {
                   <Building2 className="w-4 h-4" />
                   <span>Payout Bank / Wallet Details</span>
                 </div>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">For winning payouts via Chapa</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  For winning payouts via Chapa
+                </span>
               </div>
 
               <div>
@@ -356,22 +378,31 @@ export default function RegisterPage() {
                   Payout Destination Bank / Wallet
                 </label>
                 <div className="relative">
-                  <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  <select
+                  <Select
                     value={selectedBankCode}
-                    onChange={(e) => setSelectedBankCode(e.target.value)}
+                    onValueChange={setSelectedBankCode}
                     required
-                    className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/80 pl-10 pr-8 py-2.5 text-sm text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none cursor-pointer"
                   >
-                    {banks.map((bank) => (
-                      <option key={bank.id || bank.code} value={bank.code} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                        {bank.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
-                    ▼
-                  </div>
+                    <SelectTrigger className="w-full relative">
+                      {!selectedBankCode && (
+                        <p className="absolute left-3">Select Bank</p>
+                      )}
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Select Bank</SelectLabel>
+                        {banks.map((bank) => (
+                          <SelectItem
+                            key={bank.id || bank.code}
+                            value={bank.code}
+                          >
+                            {bank.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -398,7 +429,9 @@ export default function RegisterPage() {
                       type="text"
                       value={accountNumber}
                       onChange={(e) => setAccountNumber(e.target.value)}
-                      placeholder={isMobileWallet ? "09... or +251..." : "1000..."}
+                      placeholder={
+                        isMobileWallet ? "09... or +251..." : "1000..."
+                      }
                       required
                       className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     />
@@ -426,7 +459,8 @@ export default function RegisterPage() {
                 </div>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                ⚠️ Payout transfers use Chapa direct settlement. Ensure your account name and number match your bank or mobile money account.
+                ⚠️ Payout transfers use Chapa direct settlement. Ensure your
+                account name and number match your bank or mobile money account.
               </p>
             </div>
 
@@ -440,11 +474,22 @@ export default function RegisterPage() {
 
             <p className="text-center text-xs text-slate-500 dark:text-slate-400 pt-2">
               Already have an account?{" "}
-              <Link href="/login" className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold">
+              <Link
+                href="/login"
+                className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold"
+              >
                 Sign in
               </Link>
             </p>
           </form>
+        </div>
+
+        {/* Powered by Tefer Footer */}
+        <div className="flex items-center justify-center gap-2 mt-8 text-xs text-slate-500 dark:text-slate-400">
+          <span className="font-medium text-[11px] uppercase tracking-wider">Powered by</span>
+          <div className="inline-flex items-center text-slate-700 dark:text-slate-200">
+            <TeferLogo className="h-5 w-auto" />
+          </div>
         </div>
       </div>
     </div>

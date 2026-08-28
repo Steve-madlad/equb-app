@@ -31,6 +31,14 @@ import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import type { UserProfile } from "@/lib/domain/types";
 import type { SupportedBank } from "@/lib/services/chapaTransferService";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const DEFAULT_BANKS: SupportedBank[] = [
   { id: "cbe", name: "Commercial Bank of Ethiopia (CBE)", code: "cbe" },
@@ -60,7 +68,9 @@ export default function SettingsPage() {
 
   // Payout Bank Form States
   const [banks, setBanks] = useState<SupportedBank[]>(DEFAULT_BANKS);
-  const [selectedBankCode, setSelectedBankCode] = useState("cbe");
+  const [selectedBankCode, setSelectedBankCode] = useState<
+    string | undefined
+  >();
   const [accountNumber, setAccountNumber] = useState("");
   const [accountName, setAccountName] = useState("");
   const [payoutSaving, setPayoutSaving] = useState(false);
@@ -240,7 +250,9 @@ export default function SettingsPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Password change failed";
       if (msg.includes("requires-recent-login")) {
-        toast.error("For security, please sign out and sign back in before changing password.");
+        toast.error(
+          "For security, please sign out and sign back in before changing password.",
+        );
       } else {
         toast.error(msg);
       }
@@ -249,7 +261,9 @@ export default function SettingsPage() {
     }
   };
 
-  const isMobileWallet = ["telebirr", "cbebirr", "mpesa"].includes(selectedBankCode);
+  const isMobileWallet = selectedBankCode
+    ? ["telebirr", "cbebirr", "mpesa"].includes(selectedBankCode)
+    : false;
 
   const handleUsePhoneForAccount = () => {
     if (phone.trim()) {
@@ -258,9 +272,7 @@ export default function SettingsPage() {
   };
 
   if (loading) {
-    return (
-      <EqubLoading />
-    );
+    return <EqubLoading />;
   }
 
   return (
@@ -311,7 +323,8 @@ export default function SettingsPage() {
                 Account & Payout Settings
               </h1>
               <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                Manage your personal profile, Chapa payout bank accounts, and security preferences.
+                Manage your personal profile, Chapa payout bank accounts, and
+                security preferences.
               </p>
             </div>
 
@@ -456,26 +469,25 @@ export default function SettingsPage() {
                   Payout Destination Bank / Wallet
                 </label>
                 <div className="relative">
-                  <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  <select
+                  <Select
                     value={selectedBankCode}
-                    onChange={(e) => setSelectedBankCode(e.target.value)}
+                    onValueChange={setSelectedBankCode}
                     required
-                    className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/80 pl-10 pr-8 py-2.5 text-sm text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none cursor-pointer"
                   >
-                    {banks.map((bank) => (
-                      <option
-                        key={bank.id || bank.code}
-                        value={bank.code}
-                        className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                      >
-                        {bank.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
-                    ▼
-                  </div>
+                    <SelectTrigger className="w-full relative">
+                      {!selectedBankCode && <p className="absolute left-3">Select Bank</p>} <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {banks.map((bank) => (
+                        <SelectItem
+                          key={bank.id || bank.code}
+                          value={bank.code}
+                        >
+                          {bank.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -501,7 +513,9 @@ export default function SettingsPage() {
                     type="text"
                     value={accountNumber}
                     onChange={(e) => setAccountNumber(e.target.value)}
-                    placeholder={isMobileWallet ? "09... or +251..." : "1000..."}
+                    placeholder={
+                      isMobileWallet ? "09... or +251..." : "1000..."
+                    }
                     required
                     className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900/80 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   />
@@ -524,7 +538,8 @@ export default function SettingsPage() {
                   />
                 </div>
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                  Name must match your bank or wallet record for automated transfer approval.
+                  Name must match your bank or wallet record for automated
+                  transfer approval.
                 </p>
               </div>
 
@@ -534,7 +549,9 @@ export default function SettingsPage() {
                   loading={payoutSaving}
                   className="rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white font-bold px-5 py-2 text-xs shadow-md shadow-teal-500/20 cursor-pointer"
                 >
-                  {!payoutSaving && <Building2 className="w-3.5 h-3.5 mr-1.5" />}
+                  {!payoutSaving && (
+                    <Building2 className="w-3.5 h-3.5 mr-1.5" />
+                  )}
                   Update Payout Account
                 </Button>
               </div>
