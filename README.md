@@ -12,6 +12,7 @@ A modern, production-ready web application for managing Ethiopian Equb (እቁ�
 - **Chapa Payment & Payout Integration**:
   - In-app mobile money contributions via Telebirr, CBE Birr, Ebirr, and M-Pesa.
   - Official Chapa Hosted Checkout redirect for comprehensive test banking & OTP simulation.
+  - Spacious payment modal that opens Chapa's hosted checkout automatically and verifies payments after return.
   - Automated return verification page (`/payments/chapa/complete`) with polling settlement support.
   - Outbound winning disbursements directly to winners' Ethiopian bank accounts via Chapa Transfers API.
 - **Account & Payout Settings (`/settings`)**:
@@ -48,7 +49,7 @@ equb-app/
 │   ├── components/
 │   │   ├── ui/                 # Button, Card, StatusBadge, Toast (Sonner)
 │   │   ├── layout/             # Navbar, HomeNavbar with profile dropdown
-│   │   └── payments/           # MockPaymentSheet with Chapa inline checkout
+│   │   └── payments/           # PaymentConfirmModal with hosted Chapa checkout
 │   └── lib/
 │       ├── domain/             # Types, money, lifecycle, eligibility rules
 │       ├── firebase/           # Client & Admin SDK setup, auth helpers
@@ -118,7 +119,7 @@ cp .env.example .env.local
 
 Set `PAYMENT_PROVIDER=chapa` and `NEXT_PUBLIC_PAYMENT_PROVIDER=chapa`.
 
-- **In-App Mobile Money Channels**: Telebirr, CBE Birr, Ebirr, and M-Pesa.
+- **Chapa Mobile Money Channels**: Telebirr, CBE Birr, Ebirr, and M-Pesa through the hosted checkout.
 - **Hosted Checkout**: Direct link for interactive OTP test simulations.
 - **Webhook Endpoint**: `https://your-domain.com/api/webhooks/payments` (discriminates collections from transfer callbacks).
 - **Outbound Payouts**: Automated transfer disbursements to winners via `POST https://api.chapa.co/v1/transfers`.

@@ -117,6 +117,7 @@ export interface PaymentRecord {
   currency: Currency;
   status: PaymentStatus;
   providerTransactionId: string;
+  redirectUrl?: string;
   idempotencyKey: string;
   initiatedAt: string;
   verifiedAt?: string;

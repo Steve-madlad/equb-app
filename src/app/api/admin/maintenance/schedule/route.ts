@@ -1,4 +1,9 @@
 import { requireAdmin } from '@/lib/firebase/auth';
+import {
+  buildAutomatedPayoutScheduleConfig,
+  DEFAULT_PAYOUT_CRON,
+  DEFAULT_PAYOUT_SCHEDULE_ID,
+} from '@/lib/services/payoutSchedule';
 import { Client } from '@upstash/qstash';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -12,21 +17,15 @@ export async function POST(request: NextRequest) {
     }
 
     const client = new Client({ token });
-    const scheduleId = process.env.QSTASH_PAYOUT_SCHEDULE_ID ?? 'equb-payout-sweep';
-    const cron = process.env.QSTASH_PAYOUT_CRON ?? '0 0 * * *';
-    const destination = `${appUrl.replace(/\/$/, '')}/api/admin/maintenance/payouts`;
-    const schedule = await client.schedules.create({
-      scheduleId,
-      destination,
-      cron,
-      body: JSON.stringify({
-        source: 'equb-payout-sweep',
-        configuredBy: admin.id,
-      }),
-      headers: { 'Content-Type': 'application/json' },
+    const scheduleConfig = buildAutomatedPayoutScheduleConfig({
+      appUrl,
+      configuredBy: admin.id,
+      scheduleId: process.env.QSTASH_PAYOUT_SCHEDULE_ID ?? DEFAULT_PAYOUT_SCHEDULE_ID,
+      cron: process.env.QSTASH_PAYOUT_CRON ?? DEFAULT_PAYOUT_CRON,
     });
+    const schedule = await client.schedules.create(scheduleConfig);
 
-    return NextResponse.json({ scheduleId, destination, cron, schedule });
+    return NextResponse.json({ ...scheduleConfig, schedule });
   } catch (error) {
     return NextResponse.json(
       {

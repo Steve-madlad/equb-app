@@ -60,7 +60,7 @@ Most business logic lives in `src/lib`, while route handlers in `src/app/api` ex
 - Chapa collection is supported via `src/lib/payments/ChapaPaymentProvider.ts` (`PAYMENT_PROVIDER=chapa`):
   - Server-side initialization via `POST https://api.chapa.co/v1/transaction/initialize` with `customization.title` capped at 16 characters and sanitized Ethiopian phone numbers.
   - Return URL `/payments/chapa/complete?tx_ref=...` provides auto-polling verification for asynchronous mobile money (Telebirr / CBE Birr USSD) settlement.
-  - In-app payment drawer (`src/components/payments/MockPaymentSheet.tsx`) supports both Chapa inline mobile money channels (Telebirr, CBE Birr, Ebirr, M-Pesa) with unique transaction references and direct hosted checkout redirect links.
+  - Payment modal (`src/components/payments/PaymentConfirmModal.tsx`) uses Chapa's hosted checkout for a spacious provider-owned payment experience, followed by server-side verification.
 - Payout selection is server-side and random, implemented in `src/lib/services/payoutService.ts` using `RandomSelectionStrategy`.
 - Outbound winning disbursements are handled via `src/lib/services/chapaTransferService.ts` (`POST https://api.chapa.co/v1/transfers`), mapping winner bank details.
 - `POST /api/webhooks/payments` discriminates incoming collections from outbound transfer webhooks (`transfer.success`, `transfer.failed`).
@@ -73,6 +73,7 @@ Most business logic lives in `src/lib`, while route handlers in `src/app/api` ex
 
 - Automated payout orchestration is available at `POST /api/admin/maintenance/payouts`; admin-triggered draws remain available for recovery.
 - The preferred scheduler is Upstash QStash: one signed recurring request to the protected payout maintenance route (`POST /api/admin/maintenance/schedule`).
+- Shared QStash schedule defaults live in `src/lib/services/payoutSchedule.ts`, and automated payout runs use the same due-cycle filtering helper as the server-side payout service.
 - QStash secrets are server-only: `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, and `QSTASH_NEXT_SIGNING_KEY`.
 
 ### SEO & Metadata Architecture
@@ -97,7 +98,7 @@ Key domain types live in `src/lib/domain/types.ts`.
 - `src/app/`
   - Public pages, auth pages, dashboards, settings, admin pages, and API routes.
 - `src/components/`
-  - UI components (`Button`, `Card`, `StatusBadge`), layouts (`Navbar`, `HomeNavbar`), and drawers (`MockPaymentSheet`).
+  - UI components (`Button`, `Card`, `StatusBadge`), layouts (`Navbar`, `HomeNavbar`), and drawers (`PaymentConfirmModal`).
 - `src/lib/domain/`
   - Pure business rules, types, money helpers, lifecycle rules, and eligibility logic.
 - `src/lib/firebase/`

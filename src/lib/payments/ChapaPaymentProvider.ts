@@ -162,10 +162,15 @@ export class ChapaPaymentProvider implements PaymentProvider {
       body: JSON.stringify(payload),
     });
 
+    const redirectUrl = response.data?.checkout_url;
+    if (!redirectUrl) {
+      throw new Error('Chapa did not return a hosted checkout URL');
+    }
+
     return {
       providerTransactionId,
       status: 'INITIATED',
-      redirectUrl: response.data?.checkout_url,
+      redirectUrl,
     };
   }
 

@@ -2,7 +2,7 @@
 
 import { EditEqubDialog } from '@/components/equbs/EditEqubDialog';
 import { Navbar } from '@/components/layout/Navbar';
-import { MockPaymentSheet } from '@/components/payments/MockPaymentSheet';
+import { PaymentConfirmModal } from '@/components/payments/PaymenConfirmModal';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EqubLoading } from '@/components/ui/EqubLoading';
@@ -25,7 +25,7 @@ import type {
 } from '@/lib/domain/types';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { getBrowserTestDate, getTodayIsoDate } from '@/lib/testClock';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { onIdTokenChanged, signOut } from 'firebase/auth';
 import {
   AlertCircle,
@@ -36,14 +36,10 @@ import {
   Crown,
   History,
   Layers,
-  Lock,
-  PencilLine,
   Play,
-  RotateCcw,
   ShieldAlert,
   Sparkles,
   Trash2,
-  TrendingUp,
   UserCheck,
   UserMinus,
   Users,
@@ -296,6 +292,9 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
 
   async function handlePay(obligationId: string) {
     setActionLoading(true);
+    // Open from the user's click before awaiting the API so popup blockers allow the checkout tab.
+    const checkoutWindow =
+      paymentProvider === 'chapa' ? window.open('about:blank', '_blank') : null;
     try {
       const res = await fetch('/api/payments', {
         method: 'POST',
@@ -311,6 +310,7 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
       });
       if (res.ok) {
         const body = await res.json();
+        const redirectUrl = body.payment.redirectUrl as string | undefined;
         const matchingObligation = userObligations.find((o) => o.id === obligationId);
         setActivePayment({
           providerTransactionId: body.payment.providerTransactionId,
@@ -318,14 +318,22 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
           dueDate:
             body.obligation?.dueDate ?? matchingObligation?.dueDate ?? new Date().toISOString(),
           status: body.payment.status,
-          redirectUrl: body.payment.redirectUrl,
+          redirectUrl,
         });
         setPaymentSheetOpen(true);
+
+        if (redirectUrl && checkoutWindow) {
+          checkoutWindow.location.href = redirectUrl;
+        } else {
+          checkoutWindow?.close();
+        }
       } else {
+        checkoutWindow?.close();
         const body = await res.json().catch(() => null);
         toast.error(body?.error ?? 'Unable to initiate payment.');
       }
     } catch (err) {
+      checkoutWindow?.close();
       toast.error(err instanceof Error ? err.message : 'Unable to initiate payment.');
     } finally {
       setActionLoading(false);
@@ -1268,7 +1276,7 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
 
       {/* Payment Drawer */}
       {activePayment ? (
-        <MockPaymentSheet
+        <PaymentConfirmModal
           open={paymentSheetOpen}
           loading={actionLoading}
           status={activePayment.status}

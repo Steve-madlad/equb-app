@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { onIdTokenChanged } from 'firebase/auth';
-import { getFirebaseAuth } from '@/lib/firebase/client';
 import { Navbar } from '@/components/layout/Navbar';
+import { PaymentConfirmModal } from '@/components/payments/PaymentConfirmModal';
 import { Button } from '@/components/ui/Button';
 import { EqubLoading } from '@/components/ui/EqubLoading';
-import { MockPaymentSheet } from '@/components/payments/MockPaymentSheet';
+import { getFirebaseAuth } from '@/lib/firebase/client';
+import { onIdTokenChanged } from 'firebase/auth';
+import { useEffect, useState } from 'react';
 
 export default function MockPaymentPage({
   params,
@@ -70,7 +70,7 @@ export default function MockPaymentPage({
     <div className="min-h-screen bg-gray-50">
       <Navbar links={[]} />
       <main className="mx-auto max-w-7xl px-4 py-8">
-        <MockPaymentSheet
+        <PaymentConfirmModal
           open
           loading={loading}
           status={status}

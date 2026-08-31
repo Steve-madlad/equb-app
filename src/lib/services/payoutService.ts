@@ -54,6 +54,17 @@ export interface AutomatedPayoutRunResult {
   cycles: AutomatedPayoutCycleResult[];
 }
 
+export function getDuePayoutCycles(cycles: Cycle[], currentDateIso: string): Cycle[] {
+  const currentDate = currentDateIso.slice(0, 10);
+  return cycles
+    .filter(
+      (cycle) =>
+        cycle.dueDate <= currentDate &&
+        ['ACTIVE', 'DRAW_PENDING', 'WAITING_FOR_ELIGIBILITY', 'DRAWN'].includes(cycle.status),
+    )
+    .sort((left, right) => left.dueDate.localeCompare(right.dueDate));
+}
+
 /**
  * Sweeps due cycles, reconciles stuck payouts, and delegates selection
  * and settlement to transaction-backed payout operations.
@@ -62,21 +73,16 @@ export async function runAutomatedPayouts(
   currentDateIso: string = new Date().toISOString(),
 ): Promise<AutomatedPayoutRunResult> {
   const db = getAdminDb();
-  const currentDate = currentDateIso.slice(0, 10);
 
   // 1. Reconcile stuck transfers (>12h verification, >24h admin escalation)
   const reconciledCount = await reconcilePendingPayouts(currentDateIso);
 
   // 2. Query and process due cycles
   const cycleSnapshot = await db.collection(COLLECTIONS.cycles).get();
-  const dueCycles = cycleSnapshot.docs
-    .map((doc) => doc.data() as Cycle)
-    .filter(
-      (cycle) =>
-        cycle.dueDate <= currentDate &&
-        ['ACTIVE', 'DRAW_PENDING', 'WAITING_FOR_ELIGIBILITY', 'DRAWN'].includes(cycle.status),
-    )
-    .sort((left, right) => left.dueDate.localeCompare(right.dueDate));
+  const dueCycles = getDuePayoutCycles(
+    cycleSnapshot.docs.map((doc) => doc.data() as Cycle),
+    currentDateIso,
+  );
 
   const results: AutomatedPayoutCycleResult[] = [];
   for (const cycle of dueCycles) {

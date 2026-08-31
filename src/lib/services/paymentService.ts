@@ -77,6 +77,8 @@ export async function initiatePayment(
     await markObligationOverdue(obligationRef, obligation);
   }
 
+  const provider = getPaymentProvider();
+
   const existingPayment = await db
     .collection(COLLECTIONS.payments)
     .where('obligationId', '==', obligationId)
@@ -91,9 +93,9 @@ export async function initiatePayment(
 
     // The mock provider is in memory, so a server restart can leave Firestore
     // with a transaction that the provider no longer knows about.
-    if (getPaymentProvider().name === 'mock') {
+    if (provider.name === 'mock') {
       try {
-        await getPaymentProvider().getPaymentStatus(existing.providerTransactionId);
+        await provider.getPaymentStatus(existing.providerTransactionId);
         return existing;
       } catch {
         await existingDoc.ref.update({
@@ -101,13 +103,21 @@ export async function initiatePayment(
           failureReason: 'Mock payment session expired',
         });
       }
+    } else if (existing.redirectUrl) {
+      return existing;
+    } else if (provider.name === 'chapa') {
+      // Older Chapa records were created before the hosted URL was persisted.
+      // Reinitialize those sessions so the user receives a usable checkout link.
+      await existingDoc.ref.update({
+        status: 'CANCELLED',
+        failureReason: 'Hosted checkout URL unavailable; payment reinitialized',
+      });
     } else {
       return existing;
     }
   }
 
   const idempotencyKey = generateIdempotencyKey();
-  const provider = getPaymentProvider();
 
   const result = await provider.createPayment({
     amountMinor: obligation.totalDueMinor,
@@ -127,6 +137,7 @@ export async function initiatePayment(
     currency: 'ETB',
     status: result.status,
     providerTransactionId: result.providerTransactionId,
+    ...(result.redirectUrl ? { redirectUrl: result.redirectUrl } : {}),
     idempotencyKey,
     initiatedAt: new Date().toISOString(),
   };
