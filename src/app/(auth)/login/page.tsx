@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { signInWithEmailAndPassword, onIdTokenChanged } from 'firebase/auth';
-import { getFirebaseAuth } from '@/lib/firebase/client';
+import { TeferLogo } from '@/components/svg/TeferLogo';
 import { Button } from '@/components/ui/Button';
+import { getFirebaseAuth } from '@/lib/firebase/client';
+import { onIdTokenChanged, signInWithEmailAndPassword } from 'firebase/auth';
 import { Lock, Mail, Moon, ShieldCheck, Sun, Wallet } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { TeferLogo } from '@/components/svg/TeferLogo';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -65,14 +65,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-x-hidden bg-slate-50 px-4 py-12 transition-colors duration-300 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
+    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-x-hidden bg-slate-50 px-4 py-12 transition-colors duration-300 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
       {/* Top Bar with Logo link & Theme Toggle */}
       <div className="absolute top-6 right-6 left-6 z-10 mx-auto flex max-w-5xl items-center justify-between">
         <Link
           href="/"
           className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-white"
         >
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-500 text-white">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-linear-to-tr from-emerald-600 to-teal-500 text-white">
             <Wallet className="h-3.5 w-3.5" />
           </span>
           <span>Equb</span>
@@ -89,7 +89,7 @@ export default function LoginPage() {
       <div className="relative z-10 my-auto w-full max-w-md">
         {/* Header Branding */}
         <div className="mb-8 text-center">
-          <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-500/20">
+          <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-500/20">
             <Wallet className="h-7 w-7" />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
@@ -147,7 +147,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               loading={loading}
-              className="mt-2 w-full cursor-pointer rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:from-emerald-400 hover:to-teal-500"
+              className="mt-2 w-full cursor-pointer rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:from-emerald-400 hover:to-teal-500"
             >
               Sign In
             </Button>

@@ -1,34 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
 import { HomeNavbar } from '@/components/layout/HomeNavbar';
+import { TeferLogo } from '@/components/svg/TeferLogo';
+import { Button } from '@/components/ui/Button';
 import {
   ArrowRight,
   Award,
   Building2,
   Check,
-  CheckCircle2,
   ChevronDown,
-  Coins,
-  CreditCard,
-  FileCheck2,
   History,
-  Landmark,
-  Lock,
-  Percent,
   RefreshCw,
   Scale,
   ShieldCheck,
   Sparkles,
-  TrendingUp,
-  UserCheck,
-  Users,
   Wallet,
   Zap,
 } from 'lucide-react';
-import { TeferLogo } from '@/components/svg/TeferLogo';
+import Link from 'next/link';
+import { useState } from 'react';
 
 export default function HomePage() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -134,12 +124,12 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 selection:bg-emerald-500 selection:text-white dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 dark:text-slate-100">
+    <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 selection:bg-emerald-500 selection:text-white dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 dark:text-slate-100">
       <HomeNavbar />
 
       <main className="relative overflow-hidden">
         {/* Ambient Glow Spheres (Dark Mode Only) */}
-        <div className="pointer-events-none absolute top-20 left-1/2 -z-10 h-[450px] w-[800px] -translate-x-1/2 rounded-full bg-gradient-to-tr from-emerald-600/20 via-teal-500/15 to-emerald-400/10 opacity-0 blur-[140px] dark:opacity-100" />
+        <div className="pointer-events-none absolute top-20 left-1/2 -z-10 h-[450px] w-[800px] -translate-x-1/2 rounded-full bg-linear-to-tr from-emerald-600/20 via-teal-500/15 to-emerald-400/10 opacity-0 blur-[140px] dark:opacity-100" />
         <div className="pointer-events-none absolute top-[600px] left-10 -z-10 h-96 w-96 rounded-full bg-emerald-700/10 opacity-0 blur-[120px] dark:opacity-100" />
 
         {/* ─── Hero Section ──────────────────────────────────────────────── */}
@@ -152,7 +142,7 @@ export default function HomePage() {
 
           <h1 className="mx-auto max-w-4xl text-4xl leading-[1.15] font-extrabold tracking-tight text-slate-900 sm:text-6xl lg:text-7xl dark:text-white">
             Transparent, Fair & Automated{' '}
-            <span className="bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-700 bg-clip-text text-transparent dark:from-emerald-400 dark:via-teal-300 dark:to-emerald-200">
+            <span className="bg-linear-to-r from-emerald-600 via-teal-500 to-emerald-700 bg-clip-text text-transparent dark:from-emerald-400 dark:via-teal-300 dark:to-emerald-200">
               Equb for Ethiopia
             </span>
           </h1>
@@ -166,7 +156,7 @@ export default function HomePage() {
             <Link href="/register" className="w-full sm:w-auto">
               <Button
                 size="lg"
-                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:from-emerald-400 hover:to-teal-500 sm:w-auto"
+                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:from-emerald-400 hover:to-teal-500 sm:w-auto"
               >
                 <span>Start an Equb Account</span>
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -185,7 +175,7 @@ export default function HomePage() {
           </div>
 
           {/* Interactive Simulation / Preview Card */}
-          <div className="mx-auto mt-16 max-w-4xl rounded-3xl border border-white/15 bg-gradient-to-b from-white/[0.08] to-white/[0.02] p-6 text-left shadow-2xl backdrop-blur-2xl sm:p-8">
+          <div className="mx-auto mt-16 max-w-4xl rounded-3xl border border-white/15 bg-linear-to-b from-white/[0.08] to-white/[0.02] p-6 text-left shadow-2xl backdrop-blur-2xl sm:p-8">
             <div className="flex flex-col justify-between gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-center">
               <div className="flex items-center gap-3.5">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
@@ -481,7 +471,7 @@ export default function HomePage() {
 
         {/* ─── High-Impact Bottom CTA Banner ──────────────────────────────── */}
         <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-800 p-8 text-center text-white shadow-2xl backdrop-blur-2xl sm:p-14 dark:from-emerald-900/60 dark:via-slate-900/80 dark:to-teal-900/60">
+          <div className="relative overflow-hidden rounded-3xl border border-emerald-500/30 bg-linear-to-r from-emerald-600 via-teal-700 to-emerald-800 p-8 text-center text-white shadow-2xl backdrop-blur-2xl sm:p-14 dark:from-emerald-900/60 dark:via-slate-900/80 dark:to-teal-900/60">
             <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-teal-400/20 blur-3xl" />
 

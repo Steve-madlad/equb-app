@@ -1,22 +1,22 @@
 'use client';
 
-import { useEffect, useState, Suspense, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { onIdTokenChanged } from 'firebase/auth';
-import { getFirebaseAuth } from '@/lib/firebase/client';
-import { Button } from '@/components/ui/Button';
 import { TeferLogo } from '@/components/svg/TeferLogo';
-import { CheckCircle2, XCircle, ArrowRight, RefreshCw, Users, Wallet } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { getFirebaseAuth } from '@/lib/firebase/client';
+import { onIdTokenChanged } from 'firebase/auth';
+import { ArrowRight, CheckCircle2, RefreshCw, Users, Wallet, XCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 
 function ChapaLoadingScreen({ message }: { message: string }) {
   return (
-    <div className="flex h-[100svh] max-h-screen flex-col overflow-hidden bg-slate-50 px-6 text-slate-900 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 dark:text-white">
+    <div className="flex h-[100svh] max-h-screen flex-col overflow-hidden bg-slate-50 px-6 text-slate-900 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 dark:text-white">
       <main className="flex flex-1 items-center justify-center">
         <div className="flex w-full max-w-sm flex-col items-center text-center">
           <div className="relative flex h-24 w-24 items-center justify-center">
             <div className="absolute inset-0 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-500" />
-            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 shadow-xl shadow-emerald-500/25">
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-tr from-emerald-600 to-teal-500 shadow-xl shadow-emerald-500/25">
               <Wallet className="h-8 w-8 text-white" />
             </div>
           </div>
@@ -127,7 +127,7 @@ function ChapaCompleteContent() {
 
   if (!txRef) {
     return (
-      <div className="min-h-screen bg-slate-100/70 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
+      <div className="min-h-screen bg-slate-100/70 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
         <main className="mx-auto max-w-lg px-4 py-16 text-center">
           <p className="text-slate-500 dark:text-slate-400">Invalid transaction reference.</p>
           <Button asChild className="mt-4">
@@ -143,7 +143,7 @@ function ChapaCompleteContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/70 transition-colors duration-300 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
+    <div className="min-h-screen bg-slate-100/70 transition-colors duration-300 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
       <main className="flex-center min-h-screen px-4 py-16">
         <div className="space-y-6 rounded-3xl border border-slate-200/90 bg-white p-8 text-center shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
           {status === 'success' ? (
@@ -164,7 +164,7 @@ function ChapaCompleteContent() {
                 {equbId && (
                   <Button
                     asChild
-                    className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-2.5 font-bold text-white shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
+                    className="w-full rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 px-6 py-2.5 font-bold text-white shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
                   >
                     <Link href={`/equbs/${equbId}`}>
                       <Users className="mr-1.5 h-4 w-4" />
@@ -201,7 +201,7 @@ function ChapaCompleteContent() {
                   type="button"
                   onClick={handleManualRetry}
                   loading={retrying}
-                  className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-2.5 font-bold text-white shadow-md shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
+                  className="w-full rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 px-6 py-2.5 font-bold text-white shadow-md shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
                 >
                   {!retrying && <RefreshCw className="mr-1.5 h-4 w-4" />}
                   Check Status Again

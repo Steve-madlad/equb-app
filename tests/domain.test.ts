@@ -284,6 +284,11 @@ describe('cycle utilities', () => {
     expect(dates[0]).toBe('2026-10-01');
   });
 
+  it('generates daily custom cycle dates from the configured start date', () => {
+    const dates = generateCycleDates('2026-08-31', 'CUSTOM', 3, 1);
+    expect(dates).toEqual(['2026-09-01', '2026-09-02', '2026-09-03']);
+  });
+
   it('validates equb config', () => {
     const errors = validateEqubConfig({
       name: '',

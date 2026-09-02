@@ -84,7 +84,7 @@ export function PaymentConfirmModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[min(calc(100vw-1rem),72rem)] max-w-none overflow-hidden rounded-[2rem] border-slate-200 bg-white p-0 shadow-2xl dark:border-white/10 dark:bg-slate-950">
         <div className="grid max-h-[90vh] overflow-hidden lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="flex min-h-0 flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 px-6 py-6 text-white sm:px-8">
+          <div className="flex min-h-0 flex-col bg-linear-to-br from-slate-950 via-slate-900 to-emerald-950 px-6 py-6 text-white sm:px-8">
             <DialogHeader className="gap-4 border-b border-white/10 pb-5 text-left">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-2">
@@ -167,7 +167,7 @@ export function PaymentConfirmModal({
           <div className="flex min-h-0 flex-col bg-slate-50 px-6 py-6 sm:px-8 dark:bg-slate-950">
             <div className="space-y-4 overflow-y-auto pr-1">
               {provider === 'chapa' && redirectUrl && !isFinal ? (
-                <div className="rounded-[1.5rem] border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 p-4">
+                <div className="rounded-[1.5rem] border border-emerald-500/20 bg-linear-to-br from-emerald-500/10 to-teal-500/5 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <span className="flex items-center gap-2 text-[11px] font-bold tracking-[0.24em] text-emerald-700 uppercase dark:text-emerald-300">
                       <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
@@ -183,7 +183,7 @@ export function PaymentConfirmModal({
                     href={redirectUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-500 hover:to-teal-500"
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-emerald-600 to-teal-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-500 hover:to-teal-500"
                   >
                     <span>Continue to Chapa Checkout</span>
                     <ExternalLink className="size-4" />
@@ -249,7 +249,7 @@ export function PaymentConfirmModal({
                     onClick={() => onOutcome('SUCCESS')}
                     loading={loading}
                     disabled={isFinal}
-                    className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-xs font-bold text-white shadow-md shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500 sm:min-w-36"
+                    className="rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 text-xs font-bold text-white shadow-md shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500 sm:min-w-36"
                   >
                     {!loading && <ArrowRightLeft className="mr-1.5 size-3.5" />}
                     Pay successfully

@@ -2,7 +2,6 @@
 
 import { CreateEqubDialog } from '@/components/equbs/CreateEqubDialog';
 import { Navbar } from '@/components/layout/Navbar';
-import { Button } from '@/components/ui/Button';
 import { EqubLoading } from '@/components/ui/EqubLoading';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { formatMoney } from '@/lib/domain/money';
@@ -15,9 +14,7 @@ import {
   Coins,
   Compass,
   LayoutDashboard,
-  Plus,
   Sparkles,
-  Timer,
   TrendingUp,
   Users,
 } from 'lucide-react';
@@ -79,7 +76,7 @@ function EqubCard({
             className={[
               'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase',
               membership
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white'
+                ? 'bg-linear-to-r from-emerald-500 to-teal-600 text-white'
                 : 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-400',
             ].join(' ')}
           >
@@ -149,7 +146,7 @@ function EqubCard({
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/5">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
+            className="h-full rounded-full bg-linear-to-r from-emerald-500 to-teal-500 transition-all duration-500"
             style={{ width: `${memberPercent}%` }}
           />
         </div>
@@ -286,7 +283,7 @@ export default function DashboardPage() {
   if (loading) return <EqubLoading />;
 
   return (
-    <div className="min-h-screen bg-slate-100/70 transition-colors duration-300 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
+    <div className="min-h-screen bg-slate-100/70 transition-colors duration-300 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
       {/* Ambient glow (dark mode only) */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden opacity-0 dark:opacity-100">
         <div className="absolute top-1/4 right-1/3 h-96 w-96 rounded-full bg-emerald-600/10 blur-[140px]" />
@@ -389,7 +386,7 @@ export default function DashboardPage() {
                 className={[
                   'flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition-all duration-200',
                   activeTab === 'mine'
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20'
+                    ? 'bg-linear-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20'
                     : 'text-slate-600 hover:bg-white/40 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-200',
                 ].join(' ')}
               >
@@ -417,7 +414,7 @@ export default function DashboardPage() {
                 className={[
                   'flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition-all duration-200',
                   activeTab === 'explore'
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20'
+                    ? 'bg-linear-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20'
                     : 'text-slate-600 hover:bg-white/40 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-200',
                 ].join(' ')}
               >

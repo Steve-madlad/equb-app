@@ -35,9 +35,9 @@ import {
   Wallet,
   WalletCards,
 } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useTheme } from 'next-themes';
 import { ComponentType, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -202,7 +202,7 @@ export function Navbar({
             href="/"
             className="mr-2 flex shrink-0 items-center gap-2 text-lg font-extrabold tracking-tight text-slate-900 dark:text-white"
           >
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-sm">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-tr from-emerald-600 to-teal-500 text-white shadow-sm">
               <Wallet className="h-4 w-4" />
             </span>
             <span className="hidden sm:inline">Equb</span>
@@ -298,7 +298,7 @@ export function Navbar({
             >
               <Bell className="h-4 w-4" />
               {typeof notificationCount === 'number' && notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-1 text-[10px] leading-none font-bold text-white shadow-sm">
+                <span className="absolute -top-1 -right-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-linear-to-r from-emerald-500 to-teal-500 px-1 text-[10px] leading-none font-bold text-white shadow-sm">
                   {notificationCount > 99 ? '99+' : notificationCount}
                 </span>
               )}
@@ -314,7 +314,7 @@ export function Navbar({
                 className="rounded-full ring-2 ring-transparent transition-all duration-200 hover:ring-emerald-500/30 focus:outline-hidden"
               >
                 <Avatar className="size-9 border border-emerald-500/20 shadow-sm">
-                  <AvatarFallback className="bg-gradient-to-tr from-emerald-600 to-teal-500 text-sm font-bold tracking-wider text-white">
+                  <AvatarFallback className="bg-linear-to-tr from-emerald-600 to-teal-500 text-sm font-bold tracking-wider text-white">
                     {getInitials(userName)}
                   </AvatarFallback>
                 </Avatar>
@@ -326,7 +326,7 @@ export function Navbar({
                 <DropdownMenuLabel className="p-2">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9 shrink-0 border border-emerald-500/20">
-                      <AvatarFallback className="bg-gradient-to-tr from-emerald-600 to-teal-500 text-xs font-bold text-white">
+                      <AvatarFallback className="bg-linear-to-tr from-emerald-600 to-teal-500 text-xs font-bold text-white">
                         {getInitials(userName)}
                       </AvatarFallback>
                     </Avatar>
@@ -435,7 +435,7 @@ export function Navbar({
               </Link>
               <Link
                 href="/register"
-                className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-500/20 transition-all hover:from-emerald-400 hover:to-teal-500"
+                className="rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-500/20 transition-all hover:from-emerald-400 hover:to-teal-500"
               >
                 Get started
               </Link>

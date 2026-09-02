@@ -107,7 +107,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/70 transition-colors duration-300 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
+    <div className="min-h-screen bg-slate-100/70 transition-colors duration-300 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
       {/* Ambient glow (dark mode only) */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden opacity-0 dark:opacity-100">
         <div className="absolute top-1/4 right-1/3 h-96 w-96 rounded-full bg-emerald-600/10 blur-[140px]" />
@@ -208,7 +208,7 @@ export default function NotificationsPage() {
                           <Link href={`/equbs/${equb.id}`}>
                             <Button
                               size="sm"
-                              className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:from-emerald-400 hover:to-teal-500"
+                              className="rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:from-emerald-400 hover:to-teal-500"
                             >
                               Review Equb
                             </Button>
@@ -328,7 +328,7 @@ export default function NotificationsPage() {
                             {notification.title}
                           </h3>
                           {!notification.read && (
-                            <span className="inline-flex items-center rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                            <span className="inline-flex items-center rounded-full bg-linear-to-r from-emerald-500 to-teal-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
                               New
                             </span>
                           )}

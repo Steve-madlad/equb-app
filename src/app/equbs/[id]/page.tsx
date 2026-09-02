@@ -445,7 +445,7 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
   if (loading || !data) {
     if (notFound) {
       return (
-        <div className="min-h-screen bg-slate-100/70 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
+        <div className="min-h-screen bg-slate-100/70 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
           <Navbar
             links={[]}
             userName={userName}
@@ -467,7 +467,7 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
               </p>
               <div className="flex justify-center gap-3">
                 <Link href="/search">
-                  <Button className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 font-semibold text-white">
+                  <Button className="rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 font-semibold text-white">
                     Browse Groups
                   </Button>
                 </Link>
@@ -535,7 +535,7 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
     userMembership && !INACTIVE_STATUSES.includes(userMembership.status) ? userMembership : null;
 
   return (
-    <div className="min-h-screen bg-slate-100/70 transition-colors duration-300 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
+    <div className="min-h-screen bg-slate-100/70 transition-colors duration-300 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
       {/* Ambient glow (dark mode only) */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden opacity-0 dark:opacity-100">
         <div className="absolute top-1/4 right-1/3 h-96 w-96 rounded-full bg-emerald-600/10 blur-[140px]" />
@@ -745,7 +745,7 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
                       <Button
                         onClick={() => handlePay(o.id)}
                         loading={actionLoading}
-                        className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-2 font-bold text-white hover:from-emerald-400 hover:to-teal-500"
+                        className="rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 px-5 py-2 font-bold text-white hover:from-emerald-400 hover:to-teal-500"
                       >
                         Pay Contribution Now
                       </Button>
@@ -781,7 +781,7 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
                     <Button
                       onClick={handleJoin}
                       loading={actionLoading}
-                      className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-2.5 font-bold text-white shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
+                      className="rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 px-6 py-2.5 font-bold text-white shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
                     >
                       Request to Join Group
                     </Button>
@@ -814,7 +814,7 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
                     <Button
                       onClick={handleOpen}
                       loading={actionLoading}
-                      className="shrink-0 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2 text-xs font-bold text-white"
+                      className="shrink-0 rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 px-4 py-2 text-xs font-bold text-white"
                     >
                       Open For Members
                     </Button>
@@ -843,7 +843,7 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
                           handleLock();
                         }}
                         loading={actionLoading}
-                        className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-2.5 font-bold text-white shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
+                        className="w-full rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 py-2.5 font-bold text-white shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
                       >
                         {!actionLoading && <Play className="mr-2 h-4 w-4" />}
                         Start Equb & Advance to Cycle 1
@@ -1107,7 +1107,7 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
 
         {/* Draw Trigger Section */}
         {currentCycle && isAdmin && !currentCycle.drawId && cycleDueReached && (
-          <div className="mb-8 rounded-3xl border border-emerald-500/40 bg-gradient-to-r from-emerald-950/60 via-slate-900/80 to-teal-950/60 p-6 text-white shadow-xl backdrop-blur-xl">
+          <div className="mb-8 rounded-3xl border border-emerald-500/40 bg-linear-to-r from-emerald-950/60 via-slate-900/80 to-teal-950/60 p-6 text-white shadow-xl backdrop-blur-xl">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <div className="mb-1 flex items-center gap-2 text-xs font-bold tracking-wider text-emerald-400 uppercase">
@@ -1129,7 +1129,7 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
               <Button
                 onClick={() => handleDraw(currentCycle.id)}
                 loading={actionLoading}
-                className="rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-emerald-500/30 hover:from-emerald-300 hover:to-teal-400"
+                className="rounded-xl bg-linear-to-r from-emerald-400 to-teal-500 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-emerald-500/30 hover:from-emerald-300 hover:to-teal-400"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
                 Draw Payout Recipient

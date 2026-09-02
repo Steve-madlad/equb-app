@@ -37,7 +37,8 @@ export function CreateEqubDialog({
     name: '',
     description: '',
     contributionAmount: 1000,
-    frequency: 'MONTHLY' as 'WEEKLY' | 'MONTHLY',
+    frequency: 'MONTHLY' as 'WEEKLY' | 'MONTHLY' | 'CUSTOM',
+    customIntervalDays: 1,
     memberLimit: 10,
     minimumMemberCount: 2,
     startDate: getTodayIsoDate(),
@@ -90,7 +91,7 @@ export function CreateEqubDialog({
       <DialogTrigger asChild>
         <Button
           type="button"
-          className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
+          className="rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
         >
           <Plus className="mr-1.5 size-4" />
           Create Equb
@@ -181,7 +182,7 @@ export function CreateEqubDialog({
                 onValueChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    frequency: value as 'WEEKLY' | 'MONTHLY',
+                    frequency: value as 'WEEKLY' | 'MONTHLY' | 'CUSTOM',
                   }))
                 }
               >
@@ -191,9 +192,35 @@ export function CreateEqubDialog({
                 <SelectContent>
                   <SelectItem value="WEEKLY">Weekly</SelectItem>
                   <SelectItem value="MONTHLY">Monthly</SelectItem>
+                  <SelectItem value="CUSTOM">Custom interval</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {form.frequency === 'CUSTOM' ? (
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Days Between Cycles
+                </label>
+                <Input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={form.customIntervalDays}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      customIntervalDays: Number(event.target.value),
+                    }))
+                  }
+                  required
+                  className="rounded-xl border-slate-300 bg-white text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800/60 dark:text-white"
+                />
+                <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                  Use 1 for daily cycles.
+                </p>
+              </div>
+            ) : null}
 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -267,7 +294,7 @@ export function CreateEqubDialog({
             <Button
               type="submit"
               loading={loading}
-              className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-5 text-xs font-bold text-white shadow-md shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
+              className="rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 px-5 text-xs font-bold text-white shadow-md shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
             >
               Create Equb Group
             </Button>

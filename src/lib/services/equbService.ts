@@ -100,38 +100,6 @@ async function notifyEqubStartDateChange(
   }
 }
 
-async function syncStartDateOnActivation(
-  equbId: string,
-  equbName: string,
-  actorId: string,
-  activationDate: string,
-): Promise<void> {
-  const current = await getEqub(equbId);
-  if (!current || current.startDate === activationDate) return;
-
-  const memberships = await getMembershipsForEqub(equbId);
-  const db = getAdminDb();
-  await db.collection(COLLECTIONS.equbs).doc(equbId).update({
-    startDate: activationDate,
-    updatedAt: new Date().toISOString(),
-  });
-
-  await createAuditLog({
-    action: 'EQUB_UPDATED',
-    actorId,
-    equbId,
-    entityId: equbId,
-    metadata: {
-      name: equbName,
-      startDateFrom: current.startDate,
-      startDateTo: activationDate,
-      reason: 'Activated on a different date than the scheduled start date',
-    },
-  });
-
-  await notifyEqubStartDateChange(equbId, equbName, activationDate, memberships);
-}
-
 async function rejectPendingMembershipsOnActivation(
   equbId: string,
   equbName: string,
@@ -611,7 +579,6 @@ export async function lockEqub(
   }
 
   const activationDate = (options?.currentDateIso ?? new Date().toISOString()).slice(0, 10);
-  await syncStartDateOnActivation(equbId, equb.name, actorId, activationDate);
   await transitionEqubStatus(equbId, 'LOCKED', actorId);
   const activated = await transitionEqubStatus(equbId, 'ACTIVE', actorId);
   await createStartupContributionObligations(activated, memberships, activationDate);

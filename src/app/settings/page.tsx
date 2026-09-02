@@ -1,12 +1,19 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import Link from 'next/link';
-import { onIdTokenChanged, updatePassword, signOut } from 'firebase/auth';
-import { getFirebaseAuth } from '@/lib/firebase/client';
 import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/Button';
 import { EqubLoading } from '@/components/ui/EqubLoading';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import type { UserProfile } from '@/lib/domain/types';
+import { getFirebaseAuth } from '@/lib/firebase/client';
+import type { SupportedBank } from '@/lib/services/chapaTransferService';
+import { onIdTokenChanged, signOut, updatePassword } from 'firebase/auth';
 import {
   ArrowLeft,
   Building2,
@@ -18,27 +25,16 @@ import {
   Moon,
   Phone,
   Save,
-  Shield,
-  ShieldCheck,
   Sparkles,
   Star,
   Sun,
   User,
   UserCheck,
-  Wallet,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import type { UserProfile } from '@/lib/domain/types';
-import type { SupportedBank } from '@/lib/services/chapaTransferService';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 const DEFAULT_BANKS: SupportedBank[] = [
   { id: 'cbe', name: 'Commercial Bank of Ethiopia (CBE)', code: 'cbe' },
@@ -272,7 +268,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/70 transition-colors duration-300 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
+    <div className="min-h-screen bg-slate-100/70 transition-colors duration-300 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
       {/* Ambient background glow */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden opacity-0 dark:opacity-100">
         <div className="absolute top-1/4 right-1/3 h-96 w-96 rounded-full bg-emerald-600/10 blur-[140px]" />
@@ -431,7 +427,7 @@ export default function SettingsPage() {
                 <Button
                   type="submit"
                   loading={profileSaving}
-                  className="cursor-pointer rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
+                  className="cursor-pointer rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 px-5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
                 >
                   {!profileSaving && <Save className="mr-1.5 h-3.5 w-3.5" />}
                   Save Profile
@@ -531,7 +527,7 @@ export default function SettingsPage() {
                 <Button
                   type="submit"
                   loading={payoutSaving}
-                  className="cursor-pointer rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-md shadow-teal-500/20 hover:from-teal-400 hover:to-emerald-500"
+                  className="cursor-pointer rounded-xl bg-linear-to-r from-teal-500 to-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-md shadow-teal-500/20 hover:from-teal-400 hover:to-emerald-500"
                 >
                   {!payoutSaving && <Building2 className="mr-1.5 h-3.5 w-3.5" />}
                   Update Payout Account

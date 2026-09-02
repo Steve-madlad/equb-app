@@ -1,8 +1,5 @@
 'use client';
 
-import * as React from 'react';
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import {
   Dialog,
@@ -24,6 +21,9 @@ import {
 import { fromMinorUnits } from '@/lib/domain/money';
 import type { Equb } from '@/lib/domain/types';
 import { PencilLine } from 'lucide-react';
+import * as React from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 type FormState = {
   name: string;
@@ -343,7 +343,7 @@ export function EditEqubDialog({
               <Button
                 type="submit"
                 loading={saving}
-                className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-5 text-xs font-bold text-white shadow-md shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
+                className="rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 px-5 text-xs font-bold text-white shadow-md shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-500"
               >
                 Save Changes
               </Button>

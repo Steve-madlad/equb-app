@@ -27,7 +27,7 @@ export function EqubLoading({ className, subtitle }: { className?: string; subti
   return (
     <div
       className={cn(
-        'flex min-h-screen items-center justify-center bg-slate-50 px-4 transition-colors duration-300 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950',
+        'flex min-h-screen items-center justify-center bg-slate-50 px-4 transition-colors duration-300 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950',
         className,
       )}
     >
@@ -35,7 +35,7 @@ export function EqubLoading({ className, subtitle }: { className?: string; subti
         {/* Animated logo pulse with outer spinning accent */}
         <div className="relative flex items-center justify-center">
           <div className="absolute h-24 w-24 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-500" />
-          <div className="relative inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 shadow-xl shadow-emerald-500/25">
+          <div className="relative inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-tr from-emerald-600 to-teal-500 shadow-xl shadow-emerald-500/25">
             <Wallet className="h-8 w-8 text-white" />
           </div>
         </div>
@@ -45,7 +45,7 @@ export function EqubLoading({ className, subtitle }: { className?: string; subti
           <span className="animate-[equb-text-wave_3.2s_linear_infinite] bg-linear-to-r from-emerald-600 via-teal-400 to-emerald-600 bg-size-[220%_100%] bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-5xl dark:from-emerald-400 dark:via-slate-300 dark:to-emerald-400">
             Equb
           </span>
-          <p className="mt-3 bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-700 bg-clip-text text-sm font-semibold tracking-wide text-transparent dark:from-emerald-300 dark:via-teal-300 dark:to-emerald-400">
+          <p className="mt-3 bg-linear-to-r from-emerald-600 via-teal-500 to-emerald-700 bg-clip-text text-sm font-semibold tracking-wide text-transparent dark:from-emerald-300 dark:via-teal-300 dark:to-emerald-400">
             {subtitle || selectedPhrase}
           </p>
         </div>

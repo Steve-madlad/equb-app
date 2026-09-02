@@ -16,18 +16,9 @@ import { Slider } from '@/components/ui/slider';
 import { formatMoney } from '@/lib/domain/money';
 import type { Equb, UserProfile } from '@/lib/domain/types';
 import { getFirebaseAuth } from '@/lib/firebase/client';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { onIdTokenChanged, signOut } from 'firebase/auth';
-import {
-  ArrowRight,
-  Calendar,
-  Compass,
-  Filter,
-  RotateCcw,
-  Search,
-  SlidersHorizontal,
-  Sparkles,
-} from 'lucide-react';
+import { ArrowRight, Compass, Filter, RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -194,7 +185,7 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/70 transition-colors duration-300 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
+    <div className="min-h-screen bg-slate-100/70 transition-colors duration-300 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
       {/* Ambient glow (dark mode only) */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden opacity-0 dark:opacity-100">
         <div className="absolute top-1/4 right-1/3 h-96 w-96 rounded-full bg-emerald-600/10 blur-[140px]" />
@@ -481,7 +472,7 @@ export default function SearchPage() {
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-900/60">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
+                          className="h-full rounded-full bg-linear-to-r from-emerald-500 to-teal-500 transition-all duration-500"
                           style={{ width: `${memberPercent}%` }}
                         />
                       </div>
@@ -512,7 +503,7 @@ export default function SearchPage() {
             <button
               type="button"
               onClick={resetFilters}
-              className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2 text-xs font-semibold text-white shadow-sm"
+              className="rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 px-4 py-2 text-xs font-semibold text-white shadow-sm"
             >
               Clear Filters
             </button>
