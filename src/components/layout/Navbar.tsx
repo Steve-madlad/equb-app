@@ -1,6 +1,7 @@
 'use client';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { WinnerCongratulationsPrompt } from '@/components/notifications/WinnerCongratulationsPrompt';
 import { Button } from '@/components/ui/Button';
 import {
   Dialog,
@@ -20,11 +21,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/Input';
-import { getBrowserTestDate, getTodayIsoDate, setBrowserTestDate } from '@/lib/testClock';
 import { cn } from '@/lib/utils';
 import {
   Bell,
-  CalendarRange,
   FileClock,
   LayoutDashboard,
   LogOut,
@@ -102,82 +101,6 @@ function ThemeToggle() {
   );
 }
 
-function TestDateDialog() {
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(getTodayIsoDate());
-  const [activeDate, setActiveDate] = useState<string | null>(null);
-
-  useEffect(() => {
-    const current = getBrowserTestDate();
-    setActiveDate(current);
-    setValue(current ?? getTodayIsoDate());
-  }, []);
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant="secondary"
-          size="icon"
-          className="h-9 w-9 rounded-xl border border-slate-200/60 bg-slate-50 text-slate-500 transition-all hover:border-emerald-500/40! hover:bg-white/10! hover:text-emerald-500! dark:border-white/15 dark:bg-white/5 dark:text-slate-400"
-          aria-label="Set test date"
-          title={activeDate ? `Test date: ${activeDate}` : 'Set test date'}
-        >
-          <CalendarRange className="size-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Test date</DialogTitle>
-          <DialogDescription>
-            Temporarily make the app behave as if today is the date you choose.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Date</label>
-          <Input type="date" value={value} onChange={(event) => setValue(event.target.value)} />
-          <p className="text-muted-foreground text-xs">
-            Current override: {activeDate ?? 'Using the real date'}
-          </p>
-        </div>
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              setBrowserTestDate(null);
-              setActiveDate(null);
-              setValue(getTodayIsoDate());
-              setOpen(false);
-              toast.success('Test date cleared');
-              window.location.reload();
-            }}
-          >
-            Clear
-          </Button>
-          <Button
-            type="button"
-            onClick={() => {
-              if (!value) {
-                toast.error('Pick a date first');
-                return;
-              }
-              setBrowserTestDate(value);
-              setActiveDate(value);
-              setOpen(false);
-              toast.success(`Test date set to ${value}`);
-              window.location.reload();
-            }}
-          >
-            Apply
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export function Navbar({
   links,
   userName,
@@ -194,7 +117,9 @@ export function Navbar({
   const showAuditLogs = authenticated && isAdmin;
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-slate-200/60 border-white/10 bg-white/85 shadow-sm shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">
+    <>
+      <WinnerCongratulationsPrompt disabled={!authenticated || isAdmin} />
+      <nav className="sticky top-0 z-50 border-b border-slate-200/60 border-white/10 bg-white/85 shadow-sm shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Logo + Nav Links */}
         <div className="flex min-w-0 items-center gap-5">
@@ -272,7 +197,6 @@ export function Navbar({
         {/* Right Actions */}
         <div className="flex items-center gap-2">
           {/* Dev only: test date */}
-          {authenticated && process.env.NODE_ENV !== 'production' && <TestDateDialog />}
 
           {/* Theme toggle */}
           <ThemeToggle />
@@ -443,6 +367,7 @@ export function Navbar({
           )}
         </div>
       </div>
-    </nav>
+      </nav>
+    </>
   );
 }

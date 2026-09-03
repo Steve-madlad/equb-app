@@ -9,7 +9,7 @@ import { createAuditLog } from './auditService';
 import { initiatePayoutTransfer, verifyPayoutTransfer } from './chapaTransferService';
 import { getCyclesForEqub, getEqub, getMembershipsForEqub } from './equbService';
 import { createLedgerEntry, getSettledContributionTotalForCycle } from './ledgerService';
-import { createNotification } from './notificationService';
+import { clearPayoutProcessingNotifications, createNotification } from './notificationService';
 import { getObligationsForCycle, markOverdueObligationsForEqub } from './paymentService';
 
 export interface DrawPayoutResult {
@@ -161,6 +161,27 @@ export async function runAutomatedPayouts(
           selectedMember: paidMember,
           eligibleMembers: eligible.map((membership) => membership.userId),
           notPaidMembers: getNotPaidMembers(activeMemberships, paidMember.userId, notPaidMembers),
+        });
+        continue;
+      }
+
+      if (payout.status === 'FAILED') {
+        const failedMember = {
+          userId: payout.userId,
+          membershipId: payout.membershipId,
+          amountMinor: payout.amountMinor,
+        };
+        results.push({
+          equbId: equb.id,
+          equbName: equb.name,
+          cycleId: cycle.id,
+          cycleNumber: cycle.cycleNumber,
+          status: 'FAILED',
+          paidMember: null,
+          selectedMember: failedMember,
+          eligibleMembers: eligible.map((membership) => membership.userId),
+          notPaidMembers: getNotPaidMembers(activeMemberships, failedMember.userId, notPaidMembers),
+          error: payout.failureReason ?? 'Payout transfer failed',
         });
         continue;
       }
@@ -514,12 +535,13 @@ export async function drawPayoutRecipient(
 
   const { draw, payout, cycle, selectedMembership, activeMemberships } = drawResult;
 
-  // 2. Initial Winner Processing Notification ("No premature declaration")
+  // This identifies the winner independently from transfer settlement. It is
+  // safe to celebrate the draw without claiming that Chapa paid successfully.
   await createNotification({
     userId: selectedMembership.userId,
-    type: 'PAYOUT_PROCESSING',
+    type: 'PAYOUT_DRAW_WINNER',
     title: 'Congratulations! You won the Equb draw',
-    message: `You won Cycle #${cycle.cycleNumber}! Your payout of ${formatMoney(settledPoolAmount)} is currently being processed.`,
+    message: `You were selected for Cycle #${cycle.cycleNumber}. Your ${formatMoney(settledPoolAmount)} payout will be sent after Chapa confirms the transfer.`,
     equbId,
   });
 
@@ -617,6 +639,13 @@ export async function drawPayoutRecipient(
 
         payout.status = 'PROCESSING';
         payout.transferReference = transferResult.transferReference;
+        await createNotification({
+          userId: selectedMembership.userId,
+          type: 'PAYOUT_PROCESSING',
+          title: 'Congratulations! You won the Equb draw',
+          message: `You won Cycle #${cycle.cycleNumber}! Your payout of ${formatMoney(settledPoolAmount)} is being processed by Chapa.`,
+          equbId,
+        });
       } else if (transferResult.status === 'COMPLETED') {
         await completePayout(payout.id, adminId, {
           transferReference: transferResult.transferReference,
@@ -652,10 +681,18 @@ export async function drawPayoutRecipient(
           equbId,
           affectedUserId: winnerProfile.id,
           entityId: payout.id,
-          metadata: { error: transferResult.message },
+          metadata: { error: transferResult.message, providerResponse: transferResult.rawResponse },
         });
 
         payout.status = 'FAILED';
+        await clearPayoutProcessingNotifications(selectedMembership.userId, equbId);
+        await createNotification({
+          userId: selectedMembership.userId,
+          type: 'PAYOUT_ACTION_REQUIRED',
+          title: 'Your Equb payout needs attention',
+          message: `You were selected for Cycle #${cycle.cycleNumber}, but Chapa could not initiate the ${formatMoney(settledPoolAmount)} payout. Please update your payout account or contact an administrator.`,
+          equbId,
+        });
       }
     } catch (transferError) {
       console.error('Non-blocking payout transfer initiation error:', transferError);
@@ -665,7 +702,23 @@ export async function drawPayoutRecipient(
         failureReason: errMsg,
         updatedAt: new Date().toISOString(),
       });
+      await createAuditLog({
+        action: 'PAYOUT_TRANSFER_FAILED',
+        actorId: adminId,
+        equbId,
+        affectedUserId: winnerProfile?.id ?? selectedMembership.userId,
+        entityId: payout.id,
+        metadata: { error: errMsg },
+      });
       payout.status = 'FAILED';
+      await clearPayoutProcessingNotifications(selectedMembership.userId, equbId);
+      await createNotification({
+        userId: selectedMembership.userId,
+        type: 'PAYOUT_ACTION_REQUIRED',
+        title: 'Your Equb payout needs attention',
+        message: `You were selected for Cycle #${cycle.cycleNumber}, but the payout could not be initiated. Please contact an administrator.`,
+        equbId,
+      });
     }
   } else {
     // Winner has no bank account configured

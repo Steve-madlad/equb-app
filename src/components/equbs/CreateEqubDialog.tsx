@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getBrowserTestDate, getTodayIsoDate } from '@/lib/testClock';
+import { getTodayIsoDate } from '@/lib/date';
 import { Plus, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -43,13 +43,6 @@ export function CreateEqubDialog({
     minimumMemberCount: 2,
     startDate: getTodayIsoDate(),
   });
-
-  useEffect(() => {
-    const testDate = getBrowserTestDate();
-    if (testDate) {
-      setForm((current) => ({ ...current, startDate: testDate }));
-    }
-  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -269,6 +262,7 @@ export function CreateEqubDialog({
               </label>
               <Input
                 type="date"
+                min={getTodayIsoDate()}
                 value={form.startDate}
                 onChange={(event) =>
                   setForm((current) => ({

@@ -1,7 +1,7 @@
 'use client';
 
 import { Navbar } from '@/components/layout/Navbar';
-import { PaymentConfirmModal } from '@/components/payments/PaymentConfirmModal';
+import { PaymentConfirmModal } from '@/components/payments/PaymenConfirmModal';
 import { Button } from '@/components/ui/Button';
 import { EqubLoading } from '@/components/ui/EqubLoading';
 import { getFirebaseAuth } from '@/lib/firebase/client';

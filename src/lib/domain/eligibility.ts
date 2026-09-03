@@ -9,7 +9,6 @@ export interface EligibilityContext {
 export function isEligibleForPayout(ctx: EligibilityContext): boolean {
   const { membership, obligationsForCycle, allObligations } = ctx;
 
-  if (membership.hasReceivedPayout) return false;
   if (!['ACTIVE', 'APPROVED'].includes(membership.status)) return false;
 
   if (membership.payoutEligibilityException) return true;
@@ -42,7 +41,6 @@ export function getEligibleMembers(
 export function getIneligibilityReason(ctx: EligibilityContext): string | null {
   const { membership, obligationsForCycle, allObligations } = ctx;
 
-  if (membership.hasReceivedPayout) return 'Already received payout';
   if (!['ACTIVE', 'APPROVED'].includes(membership.status)) return 'Membership not active';
 
   if (membership.payoutEligibilityException) return null;

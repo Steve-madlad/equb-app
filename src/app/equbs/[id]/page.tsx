@@ -21,10 +21,10 @@ import type {
   Cycle,
   Equb,
   Membership,
+  Payout,
   PayoutDraw,
 } from '@/lib/domain/types';
 import { getFirebaseAuth } from '@/lib/firebase/client';
-import { getBrowserTestDate, getTodayIsoDate } from '@/lib/testClock';
 import { formatDate } from '@/lib/utils';
 import { onIdTokenChanged, signOut } from 'firebase/auth';
 import {
@@ -38,7 +38,6 @@ import {
   Layers,
   Play,
   ShieldAlert,
-  Sparkles,
   Trash2,
   UserCheck,
   UserMinus,
@@ -58,6 +57,7 @@ interface EqubDetailData {
   eligibility: { eligible: boolean; reason: string | null } | null;
   poolDisplay: string;
   draws: PayoutDraw[];
+  payouts: Payout[];
   pendingRequests?: Array<
     Membership & {
       requesterName: string;
@@ -75,8 +75,62 @@ interface EqubDetailData {
     };
     contributionStatus: ContributionObligation['status'] | 'NOT_STARTED';
   }>;
+  payoutRecipientNames?: Record<string, string>;
   currentPoolMinor: number;
   currentPoolDisplay: string;
+}
+
+function AutomatedPayoutBanner({
+  cycle,
+  payout,
+  recipientName,
+}: {
+  cycle: Cycle;
+  payout?: Payout;
+  recipientName?: string;
+}) {
+  const completed = payout?.status === 'COMPLETED';
+  const failed = payout?.status === 'FAILED';
+  const pending = payout && !completed && !failed;
+
+  return (
+    <div
+      className={`mb-8 rounded-3xl border p-6 shadow-xl ${
+        completed
+          ? 'border-emerald-400/40 bg-emerald-950/70 text-white'
+          : failed
+            ? 'border-rose-400/40 bg-rose-950/70 text-white'
+            : 'border-sky-400/40 bg-slate-900/90 text-white'
+      }`}
+    >
+      <p className="text-xs font-bold tracking-[0.18em] text-emerald-300 uppercase">
+        Automated payout monitoring
+      </p>
+      <h3 className="mt-2 text-xl font-extrabold">
+        {completed
+          ? `Cycle #${cycle.cycleNumber} payout completed`
+          : failed
+            ? `Cycle #${cycle.cycleNumber} payout needs attention`
+            : pending
+              ? `Cycle #${cycle.cycleNumber} payout is being processed`
+              : `Cycle #${cycle.cycleNumber} is queued for automatic payout`}
+      </h3>
+      <p className="mt-2 text-sm text-slate-300">
+        {completed && recipientName
+          ? `${recipientName} was selected and the payout was confirmed by the payment provider.`
+          : failed
+            ? 'A winner was selected, but the payout provider did not confirm the transfer. An administrator has been notified.'
+            : pending
+              ? 'A winner was selected and the payout is awaiting provider confirmation.'
+              : 'The scheduled maintenance workflow will select an eligible winner when this cycle is due.'}
+      </p>
+      {!completed && recipientName && (
+        <p className="mt-3 text-xs font-semibold text-slate-300">
+          Selected winner: <span className="text-white">{recipientName}</span>
+        </p>
+      )}
+    </div>
+  );
 }
 
 export default function EqubDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -86,7 +140,6 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const [drawResult, setDrawResult] = useState<PayoutDraw | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userName, setUserName] = useState<string | undefined>();
   const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
@@ -264,28 +317,6 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
     } else {
       const body = await res.json().catch(() => null);
       toast.error(body?.error ?? 'Unable to reject member.');
-    }
-    setActionLoading(false);
-  }
-
-  async function handleDraw(cycleId: string) {
-    setActionLoading(true);
-    const res = await fetch(`/api/equbs/${equbId}/draw`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ cycleId }),
-    });
-    if (res.ok) {
-      const body = await res.json();
-      setDrawResult(body.draw);
-      toast.success('Payout recipient drawn.');
-      loadData(equbId, token);
-    } else {
-      const body = await res.json().catch(() => null);
-      toast.error(body?.error ?? 'Unable to draw payout recipient.');
     }
     setActionLoading(false);
   }
@@ -493,7 +524,9 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
     userObligations,
     eligibility,
     currentPoolDisplay,
+    payouts,
     memberSummaries = [],
+    payoutRecipientNames = {},
   } = data;
 
   const visibleMembers = memberSummaries.filter(
@@ -508,8 +541,6 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
   const currentCycle = cycles.find((c) =>
     ['ACTIVE', 'DRAW_PENDING', 'WAITING_FOR_ELIGIBILITY', 'DRAWN'].includes(c.status),
   );
-  const todayIso = getBrowserTestDate() ?? getTodayIsoDate();
-  const cycleDueReached = currentCycle ? currentCycle.dueDate <= todayIso : false;
   const memberRows = visibleMembers;
   const pendingMemberRows = memberRows.filter(({ membership }) => membership.status === 'PENDING');
   const allPendingSelected =
@@ -533,6 +564,11 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
   const INACTIVE_STATUSES = ['LEFT', 'REJECTED', 'REMOVED'];
   const activeUserMembership =
     userMembership && !INACTIVE_STATUSES.includes(userMembership.status) ? userMembership : null;
+  const activeUserPayout = activeUserMembership
+    ? payouts
+        .filter((payout) => payout.userId === activeUserMembership.userId)
+        .sort((left, right) => (right.createdAt ?? '').localeCompare(left.createdAt ?? ''))[0]
+    : undefined;
 
   return (
     <div className="min-h-screen bg-slate-100/70 transition-colors duration-300 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
@@ -633,7 +669,9 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
                 {formatMoney(equb.contributionAmountMinor)}
               </div>
               <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-500">
-                Per {equb.frequency.toLowerCase()} cycle
+                {equb.frequency === 'CUSTOM'
+                  ? `Every ${equb.customIntervalDays ?? 1} days`
+                  : `Per ${equb.frequency.toLowerCase()} cycle`}
               </p>
             </div>
 
@@ -690,12 +728,18 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
                     </div>
                     <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-3 dark:border-white/5 dark:bg-slate-900/50">
                       <p className="text-[10px] font-semibold text-slate-500 uppercase dark:text-slate-400">
-                        Payout Awarded
+                        Payout Status
                       </p>
                       <p className="mt-1 text-sm font-bold text-slate-900 dark:text-white">
-                        {activeUserMembership.hasReceivedPayout
-                          ? 'Yes (Cycle Winner)'
-                          : 'Pending Draw'}
+                        {activeUserPayout?.status === 'COMPLETED'
+                          ? 'Received'
+                          : activeUserPayout?.status === 'FAILED'
+                            ? 'Transfer failed'
+                            : activeUserPayout?.status === 'AWAITING_ADMIN_APPROVAL'
+                              ? 'Approval required'
+                              : activeUserPayout?.status === 'PROCESSING'
+                                ? 'Processing'
+                                : 'Pending draw'}
                       </p>
                     </div>
                     {eligibility && (
@@ -1105,14 +1149,25 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         )}
 
-        {/* Draw Trigger Section */}
-        {currentCycle && isAdmin && !currentCycle.drawId && cycleDueReached && (
+        {isAdmin && currentCycle && (
+          <AutomatedPayoutBanner
+            cycle={currentCycle}
+            payout={payouts.find((item) => item.cycleId === currentCycle.id)}
+            recipientName={
+              currentCycle.payoutRecipientId
+                ? payoutRecipientNames[currentCycle.payoutRecipientId] ?? 'Selected member'
+                : undefined
+            }
+          />
+        )}
+
+        {false && currentCycle! && isAdmin && !currentCycle!.drawId && (
           <div className="mb-8 rounded-3xl border border-emerald-500/40 bg-linear-to-r from-emerald-950/60 via-slate-900/80 to-teal-950/60 p-6 text-white shadow-xl backdrop-blur-xl">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <div className="mb-1 flex items-center gap-2 text-xs font-bold tracking-wider text-emerald-400 uppercase">
                   <Crown className="h-4 w-4" />
-                  <span>Cycle #{currentCycle.cycleNumber} Draw Ready</span>
+                  <span>Cycle #{currentCycle!.cycleNumber} Draw Ready</span>
                 </div>
                 <h3 className="text-xl font-extrabold text-white">
                   Execute Autonomous Winner Selection
@@ -1120,28 +1175,14 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
                 <p className="mt-1 text-xs text-slate-300">
                   Pool amount:{' '}
                   <span className="font-bold text-emerald-400">
-                    {formatMoney(currentCycle.poolAmountMinor)}
+                    {formatMoney(currentCycle!.poolAmountMinor)}
                   </span>{' '}
                   • Selects from eligible, paid members.
                 </p>
               </div>
 
-              <Button
-                onClick={() => handleDraw(currentCycle.id)}
-                loading={actionLoading}
-                className="rounded-xl bg-linear-to-r from-emerald-400 to-teal-500 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-emerald-500/30 hover:from-emerald-300 hover:to-teal-400"
-              >
-                <Sparkles className="mr-2 h-4 w-4" />
-                Draw Payout Recipient
-              </Button>
             </div>
 
-            {drawResult && (
-              <div className="mt-4 flex items-center gap-2 rounded-2xl border border-emerald-500/40 bg-emerald-500/20 p-4 text-xs text-emerald-300">
-                <CheckCheck className="h-4 w-4 text-emerald-400" />
-                <span>Draw executed successfully! Reference: {drawResult.id}</span>
-              </div>
-            )}
           </div>
         )}
 
@@ -1210,8 +1251,9 @@ export default function EqubDetailPage({ params }: { params: Promise<{ id: strin
                           <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-900 dark:text-white">
                             <Crown className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />
                             <span>
-                              {memberNameByUserId.get(cycle.payoutRecipientId) ??
-                                `${cycle.payoutRecipientId.slice(0, 8)}…`}
+                      {payoutRecipientNames[cycle.payoutRecipientId] ??
+                        memberNameByUserId.get(cycle.payoutRecipientId) ??
+                        'Member'}
                             </span>
                           </div>
                         ) : (

@@ -49,6 +49,8 @@ export function validateEqubConfig(config: Partial<EqubConfig>): string[] {
   if (config.numberOfCycles && config.memberLimit && config.numberOfCycles !== config.memberLimit)
     errors.push('Number of cycles should equal member limit (one payout per member)');
   if (!config.startDate) errors.push('Start date is required');
+  else if (config.startDate < new Date().toISOString().slice(0, 10))
+    errors.push('Start date cannot be in the past');
   if (config.frequency === 'CUSTOM' && !config.customIntervalDays)
     errors.push('Custom interval days required for CUSTOM frequency');
 

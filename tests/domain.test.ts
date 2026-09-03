@@ -67,14 +67,14 @@ describe('payout eligibility', () => {
     hasReceivedPayout: false,
   };
 
-  it('rejects member who already received payout', () => {
+  it('keeps a previous winner eligible for a later rotation', () => {
     expect(
       isEligibleForPayout({
         membership: { ...baseMembership, hasReceivedPayout: true },
         obligationsForCycle: [],
         allObligations: [],
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('rejects member with unpaid cycle obligation', () => {
@@ -196,7 +196,7 @@ describe('payout eligibility', () => {
     expect(unpaid.status).toBe('OVERDUE');
   });
 
-  it('keeps a previous payout intact while blocking future eligibility', () => {
+  it('keeps a previous payout intact while allowing future rotation', () => {
     const overdue = obligation('o1', 'c1', 'OVERDUE');
     expect(
       isEligibleForPayout({

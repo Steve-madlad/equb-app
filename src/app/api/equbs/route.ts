@@ -2,7 +2,7 @@ import { toMinorUnits } from '@/lib/domain/money';
 import { getUserProfile, requireAdmin, requireAuth } from '@/lib/firebase/auth';
 import { createEqub, getMembershipsForEqub, listEqubs } from '@/lib/services/equbService';
 import { notifyAdminsOfDuePayoutCycles } from '@/lib/services/paymentService';
-import { resolveRequestDate } from '@/lib/testClock';
+import { getTodayIsoDate } from '@/lib/date';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -24,7 +24,7 @@ const createEqubSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request.headers.get('authorization'));
-    const requestDateIso = resolveRequestDate(request);
+    const requestDateIso = `${getTodayIsoDate()}T00:00:00.000Z`;
     if (user.role === 'ADMIN') {
       await notifyAdminsOfDuePayoutCycles(requestDateIso);
     }
@@ -63,6 +63,10 @@ export async function POST(request: NextRequest) {
     const admin = await requireAdmin(request.headers.get('authorization'));
     const body = await request.json();
     const parsed = createEqubSchema.parse(body);
+
+    if (parsed.startDate < getTodayIsoDate()) {
+      return NextResponse.json({ error: 'Equb start date cannot be in the past' }, { status: 400 });
+    }
 
     if (parsed.numberOfCycles !== parsed.memberLimit) {
       return NextResponse.json(

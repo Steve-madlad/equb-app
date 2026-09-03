@@ -30,6 +30,15 @@ function getSecretKey(): string | null {
   return process.env.CHAPA_SECRET_KEY ?? null;
 }
 
+function createTransferReference(input: InitiatePayoutTransferInput): string {
+  const supplied = input.reference?.trim();
+  if (supplied && supplied.length <= 36) return supplied;
+
+  // Chapa limits references to 36 characters. Keep the payout identity while
+  // avoiding the UUID plus timestamp string that exceeded that limit.
+  return `payout-${input.payoutId.replaceAll('-', '').slice(0, 22)}-${Date.now().toString(36).slice(-6)}`;
+}
+
 /**
  * Dynamically retrieves the list of supported payout banks from Chapa.
  * Falls back safely to the top 10 Ethiopian institutions if Chapa API is unreachable
@@ -77,7 +86,14 @@ export async function fetchSupportedBanks(): Promise<SupportedBank[]> {
       const mapped: SupportedBank[] = json.data.map((bank) => ({
         id: String(bank.id ?? bank.code ?? bank.slug ?? bank.name),
         name: bank.name ?? 'Unknown Bank',
-        code: String(bank.code ?? bank.slug ?? bank.id),
+        // Chapa transfer requests require the numeric bank id. Prefer it when
+        // the API also exposes a readable/provider-specific code.
+        code: String(
+          [bank.code, bank.id].find((value) => value !== undefined && /^\d+$/.test(String(value))) ??
+            bank.code ??
+            bank.slug ??
+            bank.id,
+        ),
         slug: bank.slug,
         country: bank.country ?? 'ET',
       }));
@@ -126,8 +142,7 @@ export interface InitiatePayoutTransferResult {
 export async function initiatePayoutTransfer(
   input: InitiatePayoutTransferInput,
 ): Promise<InitiatePayoutTransferResult> {
-  const transferReference =
-    input.reference ?? `payout-${input.payoutId}-${Date.now().toString(36)}`;
+  const transferReference = createTransferReference(input);
   const secretKey = getSecretKey();
   const providerName = getPaymentProvider().name;
 
@@ -161,6 +176,22 @@ export async function initiatePayoutTransfer(
   }
 
   // Live Chapa Transfers API request
+  const suppliedBankCode = input.account.bankCode.trim();
+  const supportedBanks = await fetchSupportedBanks();
+  const matchingBank = supportedBanks.find(
+    (bank) =>
+      [bank.id, bank.code, bank.slug].filter(Boolean).includes(suppliedBankCode),
+  );
+  const bankCode = matchingBank?.code ?? suppliedBankCode;
+  if (!/^\d+$/.test(bankCode)) {
+    return {
+      status: 'FAILED',
+      transferReference,
+      message: `Chapa requires a numeric bank code; received "${suppliedBankCode}". Refresh the bank list and update the winner's payout account.`,
+      rawResponse: { bankCode: suppliedBankCode, validation: 'numeric_bank_code_required' },
+    };
+  }
+
   try {
     const payload = {
       account_name: input.account.accountName.trim(),
@@ -168,7 +199,7 @@ export async function initiatePayoutTransfer(
       amount: Number((input.amountMinor / 100).toFixed(2)),
       currency: input.currency || 'ETB',
       reference: transferReference,
-      bank_code: input.account.bankCode.trim(),
+      bank_code: bankCode,
     };
 
     const response = await fetch(`${CHAPA_API_URL}/transfers`, {

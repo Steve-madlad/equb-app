@@ -70,6 +70,9 @@ const ACTION_OPTIONS = [
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
 function getActionBadgeStyle(action: string) {
+  if (action === 'PAYOUT_TRANSFER_FAILED') {
+    return 'border-rose-500/40 bg-rose-500/15 text-rose-700 dark:text-rose-300';
+  }
   if (action.startsWith('PAYOUT_')) {
     return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30';
   }

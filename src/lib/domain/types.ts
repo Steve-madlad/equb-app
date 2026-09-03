@@ -58,6 +58,8 @@ export interface Membership {
   removedBy?: string;
   removalReason?: string;
   hasReceivedPayout: boolean;
+  /** Number of draw selections, used to balance repeat cycles fairly. */
+  payoutCount?: number;
   payoutReceivedAt?: string;
   payoutCycleId?: string;
   payoutEligibilityException?: {
@@ -248,6 +250,7 @@ export type NotificationType =
   | 'PAYOUT_PROCESSING'
   | 'PAYOUT_ACTION_REQUIRED'
   | 'PAYOUT_DRAW_RESULT'
+  | 'PAYOUT_DRAW_WINNER'
   | 'MEMBERSHIP_REQUESTED'
   | 'MEMBERSHIP_APPROVED'
   | 'MEMBERSHIP_REJECTED'

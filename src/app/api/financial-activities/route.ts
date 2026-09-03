@@ -14,7 +14,9 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json({
-      activities: entries.map((entry) => ({
+      // An obligation is an internal reservation, not a cash movement. It
+      // must not appear as a second contribution in the user's finances.
+      activities: entries.filter((entry) => entry.type !== 'PAYOUT_OBLIGATION').map((entry) => ({
         ...entry,
         equbName: equbNames[entry.equbId] ?? 'Equb',
         direction: entry.type === 'PAYOUT_COMPLETED' ? 'IN' : 'OUT',

@@ -22,7 +22,7 @@ import {
   notifyAdminsOfDuePayoutCycles,
 } from '@/lib/services/paymentService';
 import { getDrawForCycle, getPayoutsForEqub } from '@/lib/services/payoutService';
-import { resolveRequestDate } from '@/lib/testClock';
+import { getTodayIsoDate } from '@/lib/date';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const user = await requireAuth(request.headers.get('authorization'));
     const { id } = await params;
     if (user.role === 'ADMIN') {
-      await notifyAdminsOfDuePayoutCycles(resolveRequestDate(request));
+      await notifyAdminsOfDuePayoutCycles(`${getTodayIsoDate()}T00:00:00.000Z`);
     }
     const equb = await getEqub(id);
     if (!equb) return NextResponse.json({ error: 'Equb not found' }, { status: 404 });
@@ -54,6 +54,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const memberships = await getMembershipsForEqub(id);
     const cycles = await getCyclesForEqub(id);
     const payouts = await getPayoutsForEqub(id);
+    const payoutRecipientIds = [
+      ...new Set(cycles.map((cycle) => cycle.payoutRecipientId).filter(Boolean)),
+    ] as string[];
+    const payoutRecipientNames = Object.fromEntries(
+      (
+        await Promise.all(
+          payoutRecipientIds.map(async (userId) => [userId, (await getUserProfile(userId))?.displayName] as const),
+        )
+      ).filter(([, displayName]) => displayName),
+    );
 
     const activeStatuses = ['ACTIVE', 'APPROVED', 'PENDING'];
     const userMemberships = memberships.filter((m) => m.userId === user.id);
@@ -158,6 +168,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       eligibility,
       pendingRequests,
       memberSummaries,
+      payoutRecipientNames,
       currentPoolMinor,
       currentPoolDisplay: formatMoney(currentPoolMinor),
     });
@@ -193,7 +204,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         return NextResponse.json({ equb: opened });
       case 'lock':
         const locked = await lockEqub(id, admin.id, {
-          currentDateIso: resolveRequestDate(request),
+          currentDateIso: `${getTodayIsoDate()}T00:00:00.000Z`,
         });
         return NextResponse.json({ equb: locked });
       case 'update': {

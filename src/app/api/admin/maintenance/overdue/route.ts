@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/firebase/auth';
 import { markOverdueObligationsForDate } from '@/lib/services/paymentService';
-import { resolveRequestDate } from '@/lib/testClock';
+import { getTodayIsoDate } from '@/lib/date';
 
 export async function POST(request: NextRequest) {
   try {
     const admin = await requireAdmin(request.headers.get('authorization'));
-    const markedCount = await markOverdueObligationsForDate(resolveRequestDate(request));
+    const markedCount = await markOverdueObligationsForDate(`${getTodayIsoDate()}T00:00:00.000Z`);
 
     return NextResponse.json({
       markedCount,

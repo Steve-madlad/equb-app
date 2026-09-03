@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/firebase/auth';
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase/admin';
-import { markNotificationRead } from '@/lib/services/notificationService';
+import { claimNotification, markNotificationRead } from '@/lib/services/notificationService';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -19,8 +19,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await markNotificationRead(id);
-    return NextResponse.json({ ok: true });
+    const claim = request.nextUrl.searchParams.get('claim') === 'true';
+    const claimed = claim
+      ? await claimNotification(id, profile.id)
+      : (await markNotificationRead(id), true);
+    return NextResponse.json({ ok: true, claimed });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed' },

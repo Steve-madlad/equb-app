@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/firebase/auth';
 import { initiatePayment, verifyAndRecordPayment } from '@/lib/services/paymentService';
-import { resolveRequestDate } from '@/lib/testClock';
+import { getTodayIsoDate } from '@/lib/date';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       const payment = await verifyAndRecordPayment(
         providerTransactionId,
         user.id,
-        resolveRequestDate(request),
+        `${getTodayIsoDate()}T00:00:00.000Z`,
       );
       console.log(`[API /api/payments] Payment verified successfully:`, payment);
       return NextResponse.json({ payment });
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'obligationId required' }, { status: 400 });
     }
 
-    const payment = await initiatePayment(obligationId, user.id, resolveRequestDate(request));
+    const payment = await initiatePayment(obligationId, user.id, `${getTodayIsoDate()}T00:00:00.000Z`);
     console.log(`[API /api/payments] Payment initiated successfully:`, payment);
     return NextResponse.json({ payment });
   } catch (error) {

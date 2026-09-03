@@ -33,6 +33,12 @@ type MembershipSummary = {
 
 const PAGE_SIZE = 6;
 
+function getFrequencyLabel(equb: Equb) {
+  return equb.frequency === 'CUSTOM'
+    ? `per ${equb.customIntervalDays ?? 1} days`
+    : equb.frequency.toLowerCase();
+}
+
 function getMembershipAccent(status?: Membership['status']) {
   switch (status) {
     case 'PENDING':
@@ -125,7 +131,7 @@ function EqubCard({
           <dd className="text-sm font-bold text-slate-900 dark:text-white">
             {equb.numberOfCycles}
             <span className="ml-1 text-[10px] font-normal text-slate-500 dark:text-slate-400">
-              {equb.frequency.toLowerCase()}
+              {getFrequencyLabel(equb)}
             </span>
           </dd>
         </div>

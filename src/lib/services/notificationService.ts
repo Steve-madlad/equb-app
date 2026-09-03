@@ -51,6 +51,38 @@ export async function markNotificationRead(notificationId: string): Promise<void
   await db.collection(COLLECTIONS.notifications).doc(notificationId).update({ read: true });
 }
 
+/** Claims an unread notification so only one page/tab can present it. */
+export async function claimNotification(notificationId: string, userId: string): Promise<boolean> {
+  const db = getAdminDb();
+  const ref = db.collection(COLLECTIONS.notifications).doc(notificationId);
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists || snapshot.data()?.userId !== userId || snapshot.data()?.read) {
+      return false;
+    }
+    transaction.update(ref, { read: true });
+    return true;
+  });
+}
+
+export async function clearPayoutProcessingNotifications(
+  userId: string,
+  equbId: string,
+): Promise<void> {
+  const db = getAdminDb();
+  const snapshot = await db
+    .collection(COLLECTIONS.notifications)
+    .where('userId', '==', userId)
+    .where('equbId', '==', equbId)
+    .where('type', '==', 'PAYOUT_PROCESSING')
+    .where('read', '==', false)
+    .get();
+  if (snapshot.empty) return;
+  const batch = db.batch();
+  snapshot.docs.forEach((doc) => batch.update(doc.ref, { read: true }));
+  await batch.commit();
+}
+
 export async function markAllNotificationsRead(userId: string): Promise<void> {
   const db = getAdminDb();
   const snapshot = await db

@@ -213,6 +213,20 @@ body {
   }
 }
 
+@keyframes confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(360px) rotate(420deg);
+  }
+}
+
 /* ─── Glassmorphism Utilities ──────────────────────────────────── */
 .glass-card {
   background: var(--app-card);
